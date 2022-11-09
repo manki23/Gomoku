@@ -18,7 +18,6 @@ class Visualiser():
         self.block_size = min(600 // self.goban_size, 150)
         self.grid_size = self.block_size * self.goban_size
         self.stone_radius = self.block_size // 3
-        print(self.grid_size, self.goban_size, self.grid_size // self.goban_size, self.grid_size / self.goban_size)
         self.x_padding = (self.window_width - self.grid_size) // 2
         self.y_padding = (self.window_height - self.grid_size) // 2
 
