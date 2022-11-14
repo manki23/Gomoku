@@ -2,12 +2,15 @@ import pygame
 import sys
 
 
-DEBUG = 1
+DEBUG = 0
 
 class Color():
     black = (0, 0, 0)
     white = (200, 200, 200)
     brown = (214, 137, 16)
+    green = (218, 247, 166)
+    dark_gray = (113, 125, 126)
+    light_gray = (229, 231, 233)
 
 class Visualiser():
     def __init__(self, goban_size=19) -> None:
@@ -20,6 +23,8 @@ class Visualiser():
         self.stone_radius = self.block_size // 3
         self.x_padding = (self.window_width - self.grid_size) // 2
         self.y_padding = (self.window_height - self.grid_size) // 2
+        self.stone_list = {'white': set(), 'black': set()}
+        self.turn = 'black'
 
         self.screen = pygame.display.set_mode((self.window_width, self.window_height))
         self.clock = pygame.time.Clock()
@@ -30,7 +35,8 @@ class Visualiser():
         while True:
             self.drawGrid()
             self.shadowDisplay()
-            self.clock.tick(60)
+            self.getClickEvent()
+            self.clock.tick(15)
             pygame.display.update()
 
             for event in pygame.event.get():
@@ -47,7 +53,33 @@ class Visualiser():
                                    self.block_size,
                                    self.block_size)
                 pygame.draw.rect(self.screen, Color.white, rect, 1)
+        self.drawStones()
     
+    def _drawOneColorStones(self, stone_list: [],  color: str):
+        zone_padding = self.block_size // 2
+        for x, y in stone_list:
+            stone_x = (x * self.block_size) + self.x_padding
+            stone_y = (y * self.block_size) + self.y_padding
+            pygame.draw.circle(self.screen, color, (stone_x, stone_y), self.stone_radius)
+
+    def drawStones(self):
+        self._drawOneColorStones(self.stone_list['white'], Color.light_gray)
+        self._drawOneColorStones(self.stone_list['black'], Color.dark_gray)
+
+    def getClickEvent(self):
+        x_mouse, y_mouse = pygame.mouse.get_pos()
+        mouse_buttons = pygame.mouse.get_pressed()
+        if any(mouse_buttons):
+            x = (self._getCursorZone(x_mouse, self.x_padding) - self.x_padding) // self.block_size
+            y = (self._getCursorZone(y_mouse, self.y_padding) - self.y_padding) // self.block_size
+            # print(x, y)
+            if (x, y) not in self.stone_list['white'] and (x, y) not in self.stone_list['black']:
+                self.stone_list[self.turn].add((x, y))
+                self.turn = 'white' if self.turn == 'black' else 'black'
+                print(self.stone_list)
+
+            
+
     def shadowDisplay(self) -> None:
         x_mouse, y_mouse = pygame.mouse.get_pos()
         x = self._getCursorZone(x_mouse, self.x_padding)
@@ -67,7 +99,3 @@ class Visualiser():
         return ((cursor <= ref + stone_padding)
                 and (cursor >= ref - stone_padding)
                 and (window_padding - stone_padding <= cursor <= self.grid_size + window_padding + stone_padding))
-
-
-if __name__ == '__main__':
-    viz = Visualiser()
