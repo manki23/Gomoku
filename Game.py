@@ -42,6 +42,7 @@ class Visualiser():
 
         self.board = [0] * goban_size ** 2
         self.stone_list = {self.WHITE: set(), self.BLACK: set()}
+        # self.stones_graph = {}
         self.player = 1
 
         self.display()
@@ -91,6 +92,9 @@ class Visualiser():
                                         self.stone_radius)
     
     def drawCapture(self, right_captures, left_captures) -> None:
+        color = Color.black if self.player == self.BLACK else Color.white
+        pygame.draw.circle(self.screen, color, (self.window_width // 2, self.y_padding - self.block_size * 2), self.stone_radius * 2)
+
         self.right_text = self.font.render(right_captures, True, Color.goban_brown)
         self.right_text_rect = self.right_text.get_rect()
         self.right_text_rect.center = (self.x_padding // 3, self.y_padding)
@@ -114,7 +118,69 @@ class Visualiser():
         zone_padding = self.block_size // 2
         if self._moreOrLess(x_mouse, zone_padding, self.x_padding, x) and self._moreOrLess(y_mouse, zone_padding, self.y_padding, y):
             pygame.draw.circle(self.screen, Color.grey, (x, y), self.stone_radius)
-        
+    
+    def _checkCondition(self, x, y):
+        # print((x, y) in self.stone_list[self.player], x >= 0 and x < self.goban_size, y >= 0 and y < self.goban_size)
+        return ((x, y) in self.stone_list[self.player]
+                and x >= 0 and x < self.goban_size
+                and y >= 0 and y < self.goban_size)
+
+    def _hasLine(self, x, y):
+        i = 1
+        count = 1
+        while i <= 4 and self._checkCondition(x - i, y):
+            count += 1
+            i += 1
+        i = 1
+        while i <= 4 and self._checkCondition(x + i, y):
+            count += 1
+            i += 1
+        if count >= 5:
+            return True
+        return False
+    
+    def _hasColumn(self, x, y):
+        i = 1
+        count = 1
+        while i <= 4 and self._checkCondition(x, y - i):
+            count += 1
+            i += 1
+        i = 1
+        while i <= 4 and self._checkCondition(x, y + i):
+            count += 1
+            i += 1
+        if count >= 5:
+            return True
+        return False
+    
+    def _hasLeftDiagonal(self, x, y):
+        i = 1
+        count = 1
+        while i <= 4 and self._checkCondition(x - i, y - i):
+            count += 1
+            i += 1
+        i = 1
+        while i <= 4 and self._checkCondition(x + i, y + i):
+            count += 1
+            i += 1
+        if count >= 5:
+            return True
+        return False
+
+    def _hasRightDiagonal(self, x, y):
+        i = 1
+        count = 1
+        while i <= 4 and self._checkCondition(x + i, y - i):
+            count += 1
+            i += 1
+        i = 1
+        while i <= 4 and self._checkCondition(x - i, y + i):
+            count += 1
+            i += 1
+        if count >= 5:
+            return True
+        return False
+
     def checkMousePressed(self) -> None:
         x_mouse, y_mouse = pygame.mouse.get_pos()
         zone_padding = self.block_size // 2
@@ -127,9 +193,14 @@ class Visualiser():
             y = (y - self.y_padding) // self.block_size
             if self.board[y * self.goban_size + x] == 0:
                 self.board[y * self.goban_size + x] = self.player
-            print(x, y)
             if (x, y) not in self.stone_list[self.WHITE] and (x, y) not in self.stone_list[self.BLACK]:
                 self.stone_list[self.player].add((x, y))
+                if self._hasColumn(x, y) or self._hasLeftDiagonal(x, y) or self._hasLine(x, y) or self._hasRightDiagonal(x, y):
+                    print(f"player {self.player} WON !")
+
+                # self.player = self.BLACK if self.player == self.WHITE else self.WHITE
+
+
 
     def checkEvents(self) -> None:
         for event in pygame.event.get():
@@ -143,7 +214,7 @@ class Visualiser():
                     pygame.quit()
                     exit()
                 elif event.key == pygame.K_a:
-                    self.player = 1 if self.player == 2 else 2
+                   self.player = self.BLACK if self.player == self.WHITE else self.WHITE
 
     def _getCursorZone(self, mouse_pos, padding) -> int:
         return int(((mouse_pos - padding) / self.block_size) + 0.5) * self.block_size + padding
