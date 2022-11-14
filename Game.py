@@ -116,8 +116,13 @@ class Visualiser():
             print(x, y)
             print('Mouse position :', pygame.mouse.get_pos())
         zone_padding = self.block_size // 2
-        if self._moreOrLess(x_mouse, zone_padding, self.x_padding, x) and self._moreOrLess(y_mouse, zone_padding, self.y_padding, y):
+        xx = (x - self.x_padding) // self.block_size
+        yy = (y - self.y_padding) // self.block_size
+        if (self._moreOrLess(x_mouse, zone_padding, self.x_padding, x)
+            and self._moreOrLess(y_mouse, zone_padding, self.y_padding, y)
+            and not self._isCreatingDoubleThree(xx, yy)):
             pygame.draw.circle(self.screen, Color.grey, (x, y), self.stone_radius)
+        
     
     def _checkCondition(self, x, y):
         # print((x, y) in self.stone_list[self.player], x >= 0 and x < self.goban_size, y >= 0 and y < self.goban_size)
@@ -125,61 +130,141 @@ class Visualiser():
                 and x >= 0 and x < self.goban_size
                 and y >= 0 and y < self.goban_size)
 
-    def _hasLine(self, x, y):
+    def _hasLine(self, x, y, f, depth):
         i = 1
         count = 1
-        while i <= 4 and self._checkCondition(x - i, y):
+        while i <= depth and self._checkCondition(x - i, y):
             count += 1
             i += 1
         i = 1
-        while i <= 4 and self._checkCondition(x + i, y):
+        while i <= depth and self._checkCondition(x + i, y):
             count += 1
             i += 1
-        if count >= 5:
+        if f(count):
             return True
         return False
     
-    def _hasColumn(self, x, y):
+    def _hasColumn(self, x, y, f, depth):
         i = 1
         count = 1
-        while i <= 4 and self._checkCondition(x, y - i):
+        while i <= depth and self._checkCondition(x, y - i):
             count += 1
             i += 1
         i = 1
-        while i <= 4 and self._checkCondition(x, y + i):
+        while i <= depth and self._checkCondition(x, y + i):
             count += 1
             i += 1
-        if count >= 5:
+        if f(count):
             return True
         return False
     
-    def _hasLeftDiagonal(self, x, y):
+    def _hasLeftDiagonal(self, x, y, f, depth):
         i = 1
         count = 1
-        while i <= 4 and self._checkCondition(x - i, y - i):
+        while i <= depth and self._checkCondition(x - i, y - i):
             count += 1
             i += 1
         i = 1
-        while i <= 4 and self._checkCondition(x + i, y + i):
+        while i <= depth and self._checkCondition(x + i, y + i):
             count += 1
             i += 1
-        if count >= 5:
+        if f(count):
             return True
         return False
 
-    def _hasRightDiagonal(self, x, y):
+    def _hasRightDiagonal(self, x, y, f, depth):
         i = 1
         count = 1
-        while i <= 4 and self._checkCondition(x + i, y - i):
+        while i <= depth and self._checkCondition(x + i, y - i):
             count += 1
             i += 1
         i = 1
-        while i <= 4 and self._checkCondition(x - i, y + i):
+        while i <= depth and self._checkCondition(x - i, y + i):
             count += 1
             i += 1
-        if count >= 5:
+        if f(count):
             return True
         return False
+
+    ##############################################################################################################
+    def _checkThreeCondition(self, x, y):
+        # print((x, y) in self.stone_list[self.player], x >= 0 and x < self.goban_size, y >= 0 and y < self.goban_size)
+        return (x >= 0 and x < self.goban_size
+                and y >= 0 and y < self.goban_size)
+
+    def _hasLineThree(self, x, y, f, depth):
+        i = 1
+        count = 1
+        while i <= depth and self._checkThreeCondition(x - i, y):
+            if (x, y) in self.stone_list[self.player]:
+                count += 1
+            i += 1
+        i = 1
+        while i <= depth and self._checkThreeCondition(x + i, y):
+            if (x, y) in self.stone_list[self.player]:
+                count += 1
+            i += 1
+        if f(count):
+            return True
+        return False
+    
+    def _hasColumnThree(self, x, y, f, depth):
+        i = 1
+        count = 1
+        while i <= depth and self._checkThreeCondition(x, y - i):
+            if (x, y) in self.stone_list[self.player]:
+                count += 1
+            i += 1
+        i = 1
+        while i <= depth and self._checkThreeCondition(x, y + i):
+            if (x, y) in self.stone_list[self.player]:
+                count += 1
+            i += 1
+        if f(count):
+            return True
+        return False
+    
+    def _hasLeftDiagonalThree(self, x, y, f, depth):
+        i = 1
+        count = 1
+        while i <= depth and self._checkThreeCondition(x - i, y - i):
+            if (x, y) in self.stone_list[self.player]:
+                count += 1
+            i += 1
+        i = 1
+        while i <= depth and self._checkThreeCondition(x + i, y + i):
+            if (x, y) in self.stone_list[self.player]:
+                count += 1
+            i += 1
+        if f(count):
+            return True
+        return False
+
+    def _hasRightDiagonalThree(self, x, y, f, depth):
+        i = 1
+        count = 1
+        while i <= depth and self._checkThreeCondition(x + i, y - i):
+            if (x, y) in self.stone_list[self.player]:
+                count += 1
+            i += 1
+        i = 1
+        while i <= depth and self._checkThreeCondition(x - i, y + i):
+            if (x, y) in self.stone_list[self.player]:
+                count += 1
+            i += 1
+        if f(count):
+            return True
+        return False
+
+    def _isCreatingDoubleThree(self, x, y):
+        f = lambda x: x == 3
+        depth = 3
+        return sum([
+            self._hasColumnThree(x, y, f, depth),
+            self._hasLeftDiagonalThree(x, y, f, depth),
+            self._hasRightDiagonalThree(x, y, f, depth),
+            self._hasLineThree(x, y, f, depth)]) >= 2
+
 
     def checkMousePressed(self) -> None:
         x_mouse, y_mouse = pygame.mouse.get_pos()
@@ -195,7 +280,12 @@ class Visualiser():
                 self.board[y * self.goban_size + x] = self.player
             if (x, y) not in self.stone_list[self.WHITE] and (x, y) not in self.stone_list[self.BLACK]:
                 self.stone_list[self.player].add((x, y))
-                if self._hasColumn(x, y) or self._hasLeftDiagonal(x, y) or self._hasLine(x, y) or self._hasRightDiagonal(x, y):
+                f = lambda x: x >= 5
+                depth = 4
+                if (self._hasColumn(x, y, f, depth)
+                    or self._hasLeftDiagonal(x, y, f, depth)
+                    or self._hasLine(x, y, f, depth)
+                    or self._hasRightDiagonal(x, y, f, depth)):
                     print(f"player {self.player} WON !")
 
                 # self.player = self.BLACK if self.player == self.WHITE else self.WHITE
