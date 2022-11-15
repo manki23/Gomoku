@@ -66,6 +66,7 @@ class CheckRules():
         return False
 
 ##############################################################################################################
+
     @staticmethod
     def _checkThreeCondition(x, y, stone_list, player, goban_size):
         # print((x, y) in stone_list[player], x >= 0 and x < goban_size, y >= 0 and y < goban_size)
@@ -139,3 +140,26 @@ class CheckRules():
         if count == 3:
             return True
         return False
+
+##############################################################################################################
+
+    @staticmethod
+    def _getCaptures(x, y, stone_list, player, opponent):
+        res = set()
+        if (x+1, y) in stone_list[opponent] and (x+2, y) in stone_list[opponent] and (x+3, y) in stone_list[player]:
+            res |= {(x+1, y), (x+2, y)}
+        if (x-1, y) in stone_list[opponent] and (x-2, y) in stone_list[opponent] and (x-3, y) in stone_list[player]:
+            res |= {(x-1, y), (x-2, y)}
+        if (x, y + 1) in stone_list[opponent] and (x, y + 2) in stone_list[opponent] and (x, y + 3) in stone_list[player]:
+            res |= {(x, y + 1), (x, y + 2)}
+        if (x, y - 1) in stone_list[opponent] and (x, y - 2) in stone_list[opponent] and (x, y - 3) in stone_list[player]:
+            res |= {(x, y - 1), (x, y - 2)}
+        if (x - 1, y - 1) in stone_list[opponent] and (x - 2, y - 2) in stone_list[opponent] and (x - 3, y - 3) in stone_list[player]:
+            res |= {(x - 1, y - 1), (x - 2, y - 2)}
+        if (x + 1, y + 1) in stone_list[opponent] and (x + 2, y + 2) in stone_list[opponent] and (x + 3, y + 3) in stone_list[player]:
+            res |= {(x + 1, y + 1), (x + 2, y + 2)}
+        if (x - 1, y + 1) in stone_list[opponent] and (x - 2, y + 2) in stone_list[opponent] and (x - 3, y + 3) in stone_list[player]:
+            res |= {(x - 1, y + 1), (x - 2, y + 2)}
+        if (x + 1, y - 1) in stone_list[opponent] and (x + 2, y - 2) in stone_list[opponent] and (x + 3, y - 3) in stone_list[player]:
+            res |= {(x + 1, y - 1), (x + 2, y - 2)}
+        return res

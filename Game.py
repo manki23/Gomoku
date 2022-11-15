@@ -43,6 +43,9 @@ class Visualiser():
 
         self.board = [0] * goban_size ** 2
         self.stone_list = {self.WHITE: set(), self.BLACK: set()}
+        self.possible_moves = set((x, y) for x in range(0, goban_size) for y in range(0, goban_size))
+        self.forbiden_move = {self.WHITE: set(), self.BLACK: set()}
+        self.player_captures = {self.WHITE: 0, self.BLACK: 0}
         # self.stones_graph = {}
         self.player = 1
 
@@ -51,8 +54,8 @@ class Visualiser():
     def display(self) -> None:
         self.clock.tick(60)
         while True:
-            right_captures = str(sum(1 if stone == 1 else 0 for stone in self.board))
-            left_captures = str(sum(1 if stone == 2 else 0 for stone in self.board))
+            left_captures = str(self.player_captures[self.WHITE])
+            right_captures = str(self.player_captures[self.BLACK])
             self.drawGrid()
             self.drawBoard()
             self.drawCapture(right_captures, left_captures)
@@ -79,18 +82,12 @@ class Visualiser():
                 pygame.draw.rect(self.screen, Color.line_brown, rect, 1)
 
     def drawBoard(self) -> None:
-        for x in range(self.goban_size):
-            for y in range(self.goban_size):
-                if self.board[y * self.goban_size + x] == 1:
-                    pygame.draw.circle(self.screen,
-                                    Color.black,
-                                    (x * self.block_size + self.x_padding, y * self.block_size + self.y_padding),
-                                    self.stone_radius)
-                elif self.board[y * self.goban_size + x] == 2:
-                    pygame.draw.circle(self.screen,
-                                        Color.white,
-                                        (x * self.block_size + self.x_padding, y * self.block_size + self.y_padding),
-                                        self.stone_radius)
+        for (x, y) in self.stone_list[self.BLACK]:
+            pos = (x * self.block_size + self.x_padding, y * self.block_size + self.y_padding)
+            pygame.draw.circle(self.screen, Color.black, pos, self.stone_radius)
+        for (x, y) in self.stone_list[self.WHITE]:
+            pos = (x * self.block_size + self.x_padding, y * self.block_size + self.y_padding)
+            pygame.draw.circle(self.screen, Color.white, pos, self.stone_radius)
     
     def drawCapture(self, right_captures, left_captures) -> None:
         color = Color.black if self.player == self.BLACK else Color.white
@@ -109,6 +106,14 @@ class Visualiser():
         pygame.draw.circle(self.screen, Color.black, (self.x_padding // 3, self.y_padding - self.block_size), self.stone_radius)
         pygame.draw.circle(self.screen, Color.white,(self.window_width - self.x_padding // 3, self.y_padding - self.block_size), self.stone_radius)
 
+    def _getPossibleMoves(self):
+        self.possible_moves = self.possible_moves - (self.stone_list[self.WHITE] | self.stone_list[self.BLACK])
+        self.forbiden_move = {self.WHITE: set(), self.BLACK: set()}
+        for (x, y) in self.possible_moves:
+            if self._isCreatingDoubleThree(x, y):
+                self.forbiden_move[self.player].add((x, y))
+        return self.possible_moves - self.forbiden_move[self.player]
+
     def shadowDisplay(self) -> None:
         x_mouse, y_mouse = pygame.mouse.get_pos()
         x = self._getCursorZone(x_mouse, self.x_padding)
@@ -119,19 +124,28 @@ class Visualiser():
         zone_padding = self.block_size // 2
         xx = (x - self.x_padding) // self.block_size
         yy = (y - self.y_padding) // self.block_size
-        if (self._moreOrLess(x_mouse, zone_padding, self.x_padding, x)
-            and self._moreOrLess(y_mouse, zone_padding, self.y_padding, y)
-            and not self._isCreatingDoubleThree(xx, yy)):
+        if (xx, yy) in self._getPossibleMoves():
             pygame.draw.circle(self.screen, Color.grey, (x, y), self.stone_radius)
 
-    def _isCreatingDoubleThree(self, x, y):
 
+    def _isCreatingDoubleThree(self, x, y):
         return sum([
             CheckRules._hasColumnThree(x, y, self.stone_list, self.player, self.goban_size),
             CheckRules._hasLeftDiagonalThree(x, y, self.stone_list, self.player, self.goban_size),
             CheckRules._hasRightDiagonalThree(x, y, self.stone_list, self.player, self.goban_size),
             CheckRules._hasLineThree(x, y, self.stone_list, self.player, self.goban_size)]) >= 2
 
+    def _hasWon(self, x, y):
+        return (CheckRules._hasColumn(x, y, self.stone_list, self.player, self.goban_size)
+                    or CheckRules._hasLeftDiagonal(x, y, self.stone_list, self.player, self.goban_size)
+                    or CheckRules._hasLine(x, y, self.stone_list, self.player, self.goban_size)
+                    or CheckRules._hasRightDiagonal(x, y, self.stone_list, self.player, self.goban_size))
+
+    def _clearCaptures(self, captures, opponent):
+        self.possible_moves |= captures
+        self.stone_list[opponent] -= captures 
+        self.forbiden_move[opponent] -= captures
+        self.forbiden_move[self.player] -= captures
 
     def checkMousePressed(self) -> None:
         x_mouse, y_mouse = pygame.mouse.get_pos()
@@ -141,27 +155,26 @@ class Visualiser():
 
         if (self._moreOrLess(x_mouse, zone_padding, self.x_padding, x)
             and self._moreOrLess(y_mouse, zone_padding, self.y_padding, y)):
-            x = (x - self.x_padding) // self.block_size
-            y = (y - self.y_padding) // self.block_size
-            if self.board[y * self.goban_size + x] == 0:
-                self.board[y * self.goban_size + x] = self.player
-            if (x, y) not in self.stone_list[self.WHITE] and (x, y) not in self.stone_list[self.BLACK]:
-                self.stone_list[self.player].add((x, y))
-                if (CheckRules._hasColumn(x, y, self.stone_list, self.player, self.goban_size)
-                    or CheckRules._hasLeftDiagonal(x, y, self.stone_list, self.player, self.goban_size)
-                    or CheckRules._hasLine(x, y, self.stone_list, self.player, self.goban_size)
-                    or CheckRules._hasRightDiagonal(x, y, self.stone_list, self.player, self.goban_size)):
+            xx = (x - self.x_padding) // self.block_size
+            yy = (y - self.y_padding) // self.block_size
+            if (xx, yy) in self._getPossibleMoves():
+                # ADD STONE TO PLAYED LIST:
+                self.stone_list[self.player].add((xx, yy))
+                # MANAGE CAPTURE:
+                opponent = self.BLACK if self.player == self.WHITE else self.WHITE
+                captures = CheckRules._getCaptures(xx, yy, self.stone_list, self.player, opponent)
+                self._clearCaptures(captures, opponent)
+                self.player_captures[self.player] += len(captures)
+                if self.player_captures[self.player] >= 10 or self._hasWon(xx, yy):
                     print(f"player {self.player} WON !")
 
                 # self.player = self.BLACK if self.player == self.WHITE else self.WHITE
-
-
 
     def checkEvents(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONUP:
                 self.checkMousePressed()
-            if event.type == pygame.QUIT:
+            elif event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
             elif event.type == pygame.KEYDOWN:
@@ -170,6 +183,9 @@ class Visualiser():
                     exit()
                 elif event.key == pygame.K_a:
                    self.player = self.BLACK if self.player == self.WHITE else self.WHITE
+                elif event.key == pygame.K_r:
+                    self.stone_list = {self.WHITE : set(), self.BLACK : set()}
+                    self.possible_moves = set((x, y) for x in range(0, self.goban_size) for y in range(0, self.goban_size))
 
     def _getCursorZone(self, mouse_pos, padding) -> int:
         return int(((mouse_pos - padding) / self.block_size) + 0.5) * self.block_size + padding
