@@ -2,6 +2,7 @@ import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 import pygame
 import sys
+from CheckRules import CheckRules
 
 DEBUG = 0
 
@@ -122,148 +123,14 @@ class Visualiser():
             and self._moreOrLess(y_mouse, zone_padding, self.y_padding, y)
             and not self._isCreatingDoubleThree(xx, yy)):
             pygame.draw.circle(self.screen, Color.grey, (x, y), self.stone_radius)
-        
-    
-    def _checkCondition(self, x, y):
-        # print((x, y) in self.stone_list[self.player], x >= 0 and x < self.goban_size, y >= 0 and y < self.goban_size)
-        return ((x, y) in self.stone_list[self.player]
-                and x >= 0 and x < self.goban_size
-                and y >= 0 and y < self.goban_size)
-
-    def _hasLine(self, x, y, f, depth):
-        i = 1
-        count = 1
-        while i <= depth and self._checkCondition(x - i, y):
-            count += 1
-            i += 1
-        i = 1
-        while i <= depth and self._checkCondition(x + i, y):
-            count += 1
-            i += 1
-        if f(count):
-            return True
-        return False
-    
-    def _hasColumn(self, x, y, f, depth):
-        i = 1
-        count = 1
-        while i <= depth and self._checkCondition(x, y - i):
-            count += 1
-            i += 1
-        i = 1
-        while i <= depth and self._checkCondition(x, y + i):
-            count += 1
-            i += 1
-        if f(count):
-            return True
-        return False
-    
-    def _hasLeftDiagonal(self, x, y, f, depth):
-        i = 1
-        count = 1
-        while i <= depth and self._checkCondition(x - i, y - i):
-            count += 1
-            i += 1
-        i = 1
-        while i <= depth and self._checkCondition(x + i, y + i):
-            count += 1
-            i += 1
-        if f(count):
-            return True
-        return False
-
-    def _hasRightDiagonal(self, x, y, f, depth):
-        i = 1
-        count = 1
-        while i <= depth and self._checkCondition(x + i, y - i):
-            count += 1
-            i += 1
-        i = 1
-        while i <= depth and self._checkCondition(x - i, y + i):
-            count += 1
-            i += 1
-        if f(count):
-            return True
-        return False
-
-    ##############################################################################################################
-    def _checkThreeCondition(self, x, y):
-        # print((x, y) in self.stone_list[self.player], x >= 0 and x < self.goban_size, y >= 0 and y < self.goban_size)
-        return (x >= 0 and x < self.goban_size
-                and y >= 0 and y < self.goban_size)
-
-    def _hasLineThree(self, x, y, f, depth):
-        i = 1
-        count = 1
-        while i <= depth and self._checkThreeCondition(x - i, y):
-            if (x, y) in self.stone_list[self.player]:
-                count += 1
-            i += 1
-        i = 1
-        while i <= depth and self._checkThreeCondition(x + i, y):
-            if (x, y) in self.stone_list[self.player]:
-                count += 1
-            i += 1
-        if f(count):
-            return True
-        return False
-    
-    def _hasColumnThree(self, x, y, f, depth):
-        i = 1
-        count = 1
-        while i <= depth and self._checkThreeCondition(x, y - i):
-            if (x, y) in self.stone_list[self.player]:
-                count += 1
-            i += 1
-        i = 1
-        while i <= depth and self._checkThreeCondition(x, y + i):
-            if (x, y) in self.stone_list[self.player]:
-                count += 1
-            i += 1
-        if f(count):
-            return True
-        return False
-    
-    def _hasLeftDiagonalThree(self, x, y, f, depth):
-        i = 1
-        count = 1
-        while i <= depth and self._checkThreeCondition(x - i, y - i):
-            if (x, y) in self.stone_list[self.player]:
-                count += 1
-            i += 1
-        i = 1
-        while i <= depth and self._checkThreeCondition(x + i, y + i):
-            if (x, y) in self.stone_list[self.player]:
-                count += 1
-            i += 1
-        if f(count):
-            return True
-        return False
-
-    def _hasRightDiagonalThree(self, x, y, f, depth):
-        i = 1
-        count = 1
-        while i <= depth and self._checkThreeCondition(x + i, y - i):
-            if (x, y) in self.stone_list[self.player]:
-                count += 1
-            i += 1
-        i = 1
-        while i <= depth and self._checkThreeCondition(x - i, y + i):
-            if (x, y) in self.stone_list[self.player]:
-                count += 1
-            i += 1
-        if f(count):
-            return True
-        return False
 
     def _isCreatingDoubleThree(self, x, y):
-        f = lambda x: x == 3
-        depth = 3
+
         return sum([
-            self._hasColumnThree(x, y, f, depth),
-            self._hasLeftDiagonalThree(x, y, f, depth),
-            self._hasRightDiagonalThree(x, y, f, depth),
-            self._hasLineThree(x, y, f, depth)]) >= 2
+            CheckRules._hasColumnThree(x, y, self.stone_list, self.player, self.goban_size),
+            CheckRules._hasLeftDiagonalThree(x, y, self.stone_list, self.player, self.goban_size),
+            CheckRules._hasRightDiagonalThree(x, y, self.stone_list, self.player, self.goban_size),
+            CheckRules._hasLineThree(x, y, self.stone_list, self.player, self.goban_size)]) >= 2
 
 
     def checkMousePressed(self) -> None:
@@ -280,12 +147,10 @@ class Visualiser():
                 self.board[y * self.goban_size + x] = self.player
             if (x, y) not in self.stone_list[self.WHITE] and (x, y) not in self.stone_list[self.BLACK]:
                 self.stone_list[self.player].add((x, y))
-                f = lambda x: x >= 5
-                depth = 4
-                if (self._hasColumn(x, y, f, depth)
-                    or self._hasLeftDiagonal(x, y, f, depth)
-                    or self._hasLine(x, y, f, depth)
-                    or self._hasRightDiagonal(x, y, f, depth)):
+                if (CheckRules._hasColumn(x, y, self.stone_list, self.player, self.goban_size)
+                    or CheckRules._hasLeftDiagonal(x, y, self.stone_list, self.player, self.goban_size)
+                    or CheckRules._hasLine(x, y, self.stone_list, self.player, self.goban_size)
+                    or CheckRules._hasRightDiagonal(x, y, self.stone_list, self.player, self.goban_size)):
                     print(f"player {self.player} WON !")
 
                 # self.player = self.BLACK if self.player == self.WHITE else self.WHITE
