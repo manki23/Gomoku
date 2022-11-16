@@ -44,7 +44,7 @@ class Visualiser():
         self.board = [0] * goban_size ** 2
         self.stone_list = {self.WHITE: set(), self.BLACK: set()}
         self.possible_moves = set((x, y) for x in range(0, goban_size) for y in range(0, goban_size))
-        self.forbiden_move = {self.WHITE: set(), self.BLACK: set()}
+        self.forbidden_move = {self.WHITE: set(), self.BLACK: set()}
         self.player_captures = {self.WHITE: 0, self.BLACK: 0}
         # self.stones_graph = {}
         self.player = 1
@@ -52,7 +52,7 @@ class Visualiser():
         self.display()
 
     def display(self) -> None:
-        self.clock.tick(60)
+        self.clock.tick(1)
         while True:
             left_captures = str(self.player_captures[self.WHITE])
             right_captures = str(self.player_captures[self.BLACK])
@@ -108,32 +108,32 @@ class Visualiser():
 
     def _getPossibleMoves(self):
         self.possible_moves = self.possible_moves - (self.stone_list[self.WHITE] | self.stone_list[self.BLACK])
-        self.forbiden_move = {self.WHITE: set(), self.BLACK: set()}
+        return self.possible_moves - self.forbidden_move[self.player]
+
+    def _updateForbiddenMoves(self):
+        self.forbidden_move[self.player] = set()
         for (x, y) in self.possible_moves:
             if self._isCreatingDoubleThree(x, y):
-                self.forbiden_move[self.player].add((x, y))
-        return self.possible_moves - self.forbiden_move[self.player]
+                self.forbidden_move[self.player].add((x, y))
 
     def shadowDisplay(self) -> None:
         x_mouse, y_mouse = pygame.mouse.get_pos()
         x = self._getCursorZone(x_mouse, self.x_padding)
         y = self._getCursorZone(y_mouse, self.y_padding)
-        if DEBUG:
-            print(x, y)
-            print('Mouse position :', pygame.mouse.get_pos())
+
         zone_padding = self.block_size // 2
         xx = (x - self.x_padding) // self.block_size
         yy = (y - self.y_padding) // self.block_size
-        if (xx, yy) in self._getPossibleMoves():
+        if (xx, yy) in (self.possible_moves - self.forbidden_move[self.player]):
             pygame.draw.circle(self.screen, Color.grey, (x, y), self.stone_radius)
 
 
     def _isCreatingDoubleThree(self, x, y):
         return sum([
-            CheckRules._hasColumnThree(x, y, self.stone_list, self.player, self.goban_size),
-            CheckRules._hasLeftDiagonalThree(x, y, self.stone_list, self.player, self.goban_size),
-            CheckRules._hasRightDiagonalThree(x, y, self.stone_list, self.player, self.goban_size),
-            CheckRules._hasLineThree(x, y, self.stone_list, self.player, self.goban_size)]) >= 2
+            CheckRules._hasHorizontalFreeThree(x, y, self.stone_list, self.player, self.possible_moves),
+            CheckRules._hasVerticalFreeThree(x, y, self.stone_list, self.player, self.possible_moves),
+            CheckRules._hasRightDiagonalFreeThree(x, y, self.stone_list, self.player, self.possible_moves),
+            CheckRules._hasLeftDiagonalFreeThree(x, y, self.stone_list, self.player, self.possible_moves)]) >= 2
 
     def _hasWon(self, x, y):
         return (CheckRules._hasColumn(x, y, self.stone_list, self.player, self.goban_size)
@@ -144,8 +144,8 @@ class Visualiser():
     def _clearCaptures(self, captures, opponent):
         self.possible_moves |= captures
         self.stone_list[opponent] -= captures 
-        self.forbiden_move[opponent] -= captures
-        self.forbiden_move[self.player] -= captures
+        self.forbidden_move[opponent] -= captures
+        self.forbidden_move[self.player] -= captures
 
     def checkMousePressed(self) -> None:
         x_mouse, y_mouse = pygame.mouse.get_pos()
@@ -160,6 +160,8 @@ class Visualiser():
             if (xx, yy) in self._getPossibleMoves():
                 # ADD STONE TO PLAYED LIST:
                 self.stone_list[self.player].add((xx, yy))
+                self.possible_moves.remove((xx, yy))
+                self._updateForbiddenMoves()
                 # MANAGE CAPTURE:
                 opponent = self.BLACK if self.player == self.WHITE else self.WHITE
                 captures = CheckRules._getCaptures(xx, yy, self.stone_list, self.player, opponent)
@@ -168,7 +170,8 @@ class Visualiser():
                 if self.player_captures[self.player] >= 10 or self._hasWon(xx, yy):
                     print(f"player {self.player} WON !")
 
-                # self.player = self.BLACK if self.player == self.WHITE else self.WHITE
+                # MANAGE PLAYER TURN
+                self.player = self.BLACK if self.player == self.WHITE else self.WHITE
 
     def checkEvents(self) -> None:
         for event in pygame.event.get():
