@@ -9,61 +9,73 @@ class CheckRules():
     def _hasLine(x, y, stone_list, player, goban_size):
         i = 1
         count = 1
+        res = {(x, y)}
         while i <= 4 and CheckRules._checkCondition(x - i, y, stone_list, player, goban_size):
             count += 1
+            res.add((x - i, y))
             i += 1
         i = 1
         while i <= 4 and CheckRules._checkCondition(x + i, y, stone_list, player, goban_size):
             count += 1
+            res.add((x + i, y))
             i += 1
         if count >= 5:
-            return True
-        return False
+            return res
+        return set()
  
     @staticmethod   
     def _hasColumn(x, y, stone_list, player, goban_size):
         i = 1
         count = 1
+        res = {(x, y)}
         while i <= 4 and CheckRules._checkCondition(x, y - i, stone_list, player, goban_size):
             count += 1
+            res.add((x, y - i))
             i += 1
         i = 1
         while i <= 4 and CheckRules._checkCondition(x, y + i, stone_list, player, goban_size):
             count += 1
+            res.add((x, y + i))
             i += 1
         if count >= 5:
-            return True
-        return False
+            return res
+        return set()
 
     @staticmethod
     def _hasLeftDiagonal(x, y, stone_list, player, goban_size):
         i = 1
         count = 1
+        res = {(x, y)}
         while i <= 4 and CheckRules._checkCondition(x - i, y - i, stone_list, player, goban_size):
             count += 1
+            res.add((x - i, y - i))
             i += 1
         i = 1
         while i <= 4 and CheckRules._checkCondition(x + i, y + i, stone_list, player, goban_size):
             count += 1
+            res.add((x + i, y + i))
             i += 1
         if count >= 5:
-            return True
-        return False
+            return res
+        return set()
 
     @staticmethod
     def _hasRightDiagonal(x, y, stone_list, player, goban_size):
         i = 1
         count = 1
+        res = {(x, y)}
         while i <= 4 and CheckRules._checkCondition(x + i, y - i, stone_list, player, goban_size):
             count += 1
+            res.add((x + i, y - i))
             i += 1
         i = 1
         while i <= 4 and CheckRules._checkCondition(x - i, y + i, stone_list, player, goban_size):
             count += 1
+            res.add((x - i, y + i))
             i += 1
         if count >= 5:
-            return True
-        return False
+            return res
+        return set()
 
 
 ##############################################################################################################
@@ -88,6 +100,29 @@ class CheckRules():
         if (x + 1, y - 1) in stone_list[opponent] and (x + 2, y - 2) in stone_list[opponent] and (x + 3, y - 3) in stone_list[player]:
             res |= {(x + 1, y - 1), (x + 2, y - 2)}
         return res
+
+    @staticmethod
+    def _getOpponentCaptures(x, y, stone_list, player, opponent):
+        res = set()
+        all_stones = stone_list[player] | stone_list[opponent]
+
+        if (x - 1, y) in stone_list[opponent] and (x + 1, y) in stone_list[player] and (x + 2, y) not in all_stones:
+            return True
+        if (x + 1, y) in stone_list[opponent] and (x - 1, y) in stone_list[player] and (x - 2, y) in all_stones:
+            return True
+        if (x, y + 1) in stone_list[opponent] and (x, y - 1) in stone_list[player] and (x, y - 2) in all_stones:
+            return True
+        if (x, y - 1) in stone_list[opponent] and (x, y + 1) in stone_list[player] and (x, y + 2) in all_stones:
+            return True
+        if (x - 1, y - 1) in stone_list[opponent] and (x + 1, y + 1) in stone_list[player] and (x + 2, y + 2) in all_stones:
+            return True
+        if (x + 1, y + 1) in stone_list[opponent] and (x - 1, y - 1) in stone_list[player] and (x - 2, y - 2) in all_stones:
+            return True
+        if (x - 1, y + 1) in stone_list[opponent] and (x + 1, y - 1) in stone_list[player] and (x + 2, y - 2) in all_stones:
+            return True
+        if (x + 1, y - 1) in stone_list[opponent] and (x - 1, y + 1) in stone_list[player] and (x - 2, y + 2) in all_stones:
+            return True
+        return False
 
 ##############################################################################################################
 

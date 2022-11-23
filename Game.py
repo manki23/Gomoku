@@ -143,7 +143,7 @@ class Visualiser():
             self.drawExitButton()
             self.shadowDisplay()
             self.checkEvents()
-            if self.mode[self.player] == "AI":
+            if self.mode[self.player] == "AI" and not self.gameover:
                 self.playNextMove()
             pygame.display.update()
         self.menu()
@@ -258,8 +258,18 @@ class Visualiser():
                     or CheckRules._hasLine(x, y, self.stone_list, self.player, self.goban_size)
                     or CheckRules._hasRightDiagonal(x, y, self.stone_list, self.player, self.goban_size))
 
+    def letOpponentPlay(self, aligned):
+        for x, y in aligned:
+            if CheckRules._getOpponentCaptures(x, y, self.stone_list, self.player, self.opponent):
+                return True
+        for x, y in self.stone_list[self.player] - aligned:
+            if self.player_captures[self.opponent] == 8 and CheckRules._getOpponentCaptures(x, y, self.stone_list, self.player, self.opponent):
+                return True
+        return False
+
     def checkGameOver(self, xx, yy):
-        if self.player_captures[self.player] >= 10 or self._hasFiveAligned(xx, yy):
+        aligned = self._hasFiveAligned(xx, yy)
+        if self.player_captures[self.player] >= 10 or (aligned and not self.letOpponentPlay(aligned)):
             print(f"player {self.player} WON !") # TODO: CHANGE VICTORY MANAGEMENT
             self.gameover = True
 
