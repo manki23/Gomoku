@@ -52,10 +52,14 @@ class Visualiser():
         self.opponent = self.WHITE
         self.stone_list = {self.WHITE: set(), self.BLACK: set()}
         self.possible_moves = set((x, y) for x in range(0, self.goban_size) for y in range(0, self.goban_size))
+        low = (self.goban_size // 2) - 2
+        high = (self.goban_size // 2) + 3
+        self.playable_area = set((x, y) for x in range(low, high) for y in range(low, high))
         self.forbidden_move = {self.WHITE: set(), self.BLACK: set()}
         self.player_captures = {self.WHITE: 0, self.BLACK: 0}
         self.gameover = False
         self.show_game = False
+        self.turns = 0
 
     def displayStart(self):
         # START
@@ -130,7 +134,7 @@ class Visualiser():
 
     def playNextMove(self):
         if len(self.possible_moves) > 0:
-            (x, y) = Bot.getNextMove(self.possible_moves, self.stone_list, self.player, self.opponent)
+            (x, y) = Bot.getNextMove(self.playable_area, self.stone_list, self.player, self.opponent, self.forbidden_move)
             self.playOneMove(x, y)
 
 
@@ -181,6 +185,12 @@ class Visualiser():
         color = Color.black if self.player == self.BLACK else Color.white
         pygame.draw.circle(self.screen, color, (self.window_width // 2, (self.y_padding - self.block_size // 2) // 2), self.stone_radius * 2)
 
+        self.turns_text = self.font.render(f"TURN: {self.turns}", True, Color.goban_brown)
+        self.turns_text_rect = self.turns_text.get_rect()
+        self.turns_text_rect.center = (self.window_width // 2, 14 * self.window_height // 15)
+        self.screen.blit(self.turns_text, self.turns_text_rect)
+
+
         self.right_text = self.font.render(right_captures, True, Color.goban_brown)
         self.right_text_rect = self.right_text.get_rect()
         self.right_text_rect.center = (self.x_padding // 3, self.y_padding)
@@ -196,14 +206,10 @@ class Visualiser():
 
     
     def drawExitButton(self) -> None:
-        self.exit_button_text = self.font.render("EXIT", True, Color.white)
+        self.exit_button_text = self.font.render("EXIT", True, Color.goban_brown)
         self.exit_button_text_rect = self.exit_button_text.get_rect()
         self.exit_button_text_rect.center = (1 * self.window_width // 12, 11 * self.window_height // 12)
         self.screen.blit(self.exit_button_text, self.exit_button_text_rect)
-
-    def _getPossibleMoves(self):
-        self.possible_moves = self.possible_moves - (self.stone_list[self.WHITE] | self.stone_list[self.BLACK])
-        return self.possible_moves - self.forbidden_move[self.player]
 
     def _updateForbiddenMoves(self):
         self.forbidden_move = {self.WHITE: set(), self.BLACK: set()}
@@ -240,10 +246,22 @@ class Visualiser():
         self.forbidden_move[self.opponent] -= captures
         self.forbidden_move[self.player] -= captures
 
+    def updateStoneAreaCoordinates(self, x, y):
+        for i in range(-2, 3):
+            for j in range(-2, 3):
+                if (x + i, y + j) in self.possible_moves:
+                    self.playable_area.add((x + i, y + j))
+
+
+
+
     def playOneMove(self, xx, yy):
         # ADD STONE TO PLAYED LIST:
         self.stone_list[self.player].add((xx, yy))
         self.possible_moves.remove((xx, yy))
+        if (xx, yy) in self.playable_area:
+            self.playable_area.remove((xx, yy))
+        self.updateStoneAreaCoordinates(xx, yy)
         self._updateForbiddenMoves()
         # MANAGE CAPTURE:
         captures = CheckRules._getCaptures(xx, yy, self.stone_list, self.player, self.opponent)
@@ -251,6 +269,7 @@ class Visualiser():
         self.player_captures[self.player] += len(captures)
         self.checkGameOver(xx, yy)
         self.opponent, self.player = self.player, self.BLACK if self.player == self.WHITE else self.WHITE
+        self.turns += 1
 
     def _hasFiveAligned(self, x, y):
         return (CheckRules._hasColumn(x, y, self.stone_list, self.player, self.goban_size)
@@ -284,7 +303,7 @@ class Visualiser():
             xx = (x - self.x_padding) // self.block_size
             yy = (y - self.y_padding) // self.block_size
 
-            if (xx, yy) in self._getPossibleMoves():
+            if (xx, yy) in (self.possible_moves - self.forbidden_move[self.player]):
                 self.playOneMove(xx, yy)
 
 
@@ -313,8 +332,7 @@ class Visualiser():
                     self.opponent = self.player
                     self.player = self.BLACK if self.player == self.WHITE else self.WHITE
                 elif event.key == pygame.K_r:
-                    self.stone_list = {self.WHITE : set(), self.BLACK : set()}
-                    self.possible_moves = set((x, y) for x in range(0, self.goban_size) for y in range(0, self.goban_size))
+                    self.resetGame()
 
     def _getCursorZone(self, mouse_pos, padding) -> int:
         return int(((mouse_pos - padding) / self.block_size) + 0.5) * self.block_size + padding
