@@ -267,7 +267,7 @@ class Visualiser():
         captures = CheckRules._getCaptures(xx, yy, self.stone_list, self.player, self.opponent)
         self._clearCaptures(captures)
         self.player_captures[self.player] += len(captures)
-        self.checkGameOver(xx, yy)
+        self.gameover = self.checkGameOver(xx, yy)
         self.opponent, self.player = self.player, self.BLACK if self.player == self.WHITE else self.WHITE
         self.turns += 1
 
@@ -290,11 +290,10 @@ class Visualiser():
 
     def checkGameOver(self, xx, yy):
         aligned = self._hasFiveAligned(xx, yy)
-        print("aligned:", aligned)
-        print("let op play:", self.letOpponentPlay(aligned))
         if self.player_captures[self.player] >= 10 or (aligned and not self.letOpponentPlay(aligned)):
             print(f"player {self.player} WON !") # TODO: CHANGE VICTORY MANAGEMENT
-            self.gameover = True
+            return True
+        return False
 
     def checkMousePressed(self) -> None:
         x_mouse, y_mouse = pygame.mouse.get_pos()
