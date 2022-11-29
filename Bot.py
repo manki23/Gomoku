@@ -8,17 +8,15 @@ class Bot():
 
     @staticmethod
     def getBoardEval(stone_list, player, opponent, possible_moves, forbidden_move):
-        args = (stone_list, player, opponent, possible_moves, forbidden_move)
-        hasFiveInRow = CheckHeuristic.hasFiveInRow(*args)
-        if hasFiveInRow: print("\nFIVE IN ROW:", hasFiveInRow)
-        hasLiveFour = CheckHeuristic.hasLiveFour(*args)
-        hasDeadFour = CheckHeuristic.hasDeadFour(*args)
-        hasLiveThree = CheckHeuristic.hasLiveThree(*args)
-        hasDeadThree = CheckHeuristic.hasDeadThree(*args)
-        hasLiveTwo = CheckHeuristic.hasLiveTwo(*args)
-        hasDeadTwo = CheckHeuristic.hasDeadTwo(*args)
 
-        return 100_000 * hasFiveInRow + 15_000 * hasLiveFour + 1_500 * hasDeadFour + 10_000 * hasLiveThree + 5_000 * hasDeadThree + 50 * hasLiveTwo + 10 * hasDeadTwo
+        dic = CheckHeuristic.getPatternDict(stone_list, player, opponent, possible_moves, forbidden_move)
+
+        score = 1_000_000 * dic["fiveInRow"] + 15_000 * dic["liveFour"] + 1_500 * dic["deadFour"] + 10_000 * dic["liveThree"] + 5_000 * dic["deadThree"] + 50 * dic["liveTwo"] + 10 * dic["deadTwo"]
+        return score
+
+    # @staticmethod
+    # def minimax(stone_list, player, depth):
+    #     if depth == 0
 
     @staticmethod
     def getNextMove(possible_moves, stone_list, player, opponent, forbidden_move):

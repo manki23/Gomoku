@@ -4,6 +4,7 @@ import pygame
 import sys
 from CheckRules import CheckRules
 from Bot import Bot
+from CheckHeuristic import CheckHeuristic
 
 DEBUG = 0
 
@@ -136,7 +137,6 @@ class Visualiser():
         if len(self.possible_moves) > 0:
             (x, y) = Bot.getNextMove(self.playable_area, self.stone_list, self.player, self.opponent, self.forbidden_move)
             self.playOneMove(x, y)
-
 
     def launch_game(self) -> None:
         self.gameover = False
@@ -279,15 +279,19 @@ class Visualiser():
 
     def letOpponentPlay(self, aligned):
         for x, y in aligned:
-            if CheckRules._getOpponentCaptures(x, y, self.stone_list, self.player, self.opponent):
+            if CheckRules._getOpponentCaptures(x, y, self.stone_list, self.player, self.opponent, self.possible_moves, self.forbidden_move):
+                print("aqui")
                 return True
         for x, y in self.stone_list[self.player] - aligned:
-            if self.player_captures[self.opponent] == 8 and CheckRules._getOpponentCaptures(x, y, self.stone_list, self.player, self.opponent):
+            if self.player_captures[self.opponent] == 8 and CheckRules._getOpponentCaptures(x, y, self.stone_list, self.player, self.opponent, self.possible_moves, self.forbidden_move):
+                print("here")
                 return True
         return False
 
     def checkGameOver(self, xx, yy):
         aligned = self._hasFiveAligned(xx, yy)
+        print("aligned:", aligned)
+        print("let op play:", self.letOpponentPlay(aligned))
         if self.player_captures[self.player] >= 10 or (aligned and not self.letOpponentPlay(aligned)):
             print(f"player {self.player} WON !") # TODO: CHANGE VICTORY MANAGEMENT
             self.gameover = True
