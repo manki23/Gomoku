@@ -1,4 +1,6 @@
 import json
+from collections import defaultdict
+from CheckRules import CheckRules
 
 class CheckHeuristic():
     @staticmethod
@@ -9,17 +11,15 @@ class CheckHeuristic():
         return True
 
     @staticmethod
-    def getPatternDict(stone_list, player, opponent, possible_moves, forbidden_move): 
+    def getPatternDict(stone_list, player, opponent, possible_moves, forbidden_move, player_captures, debug=False): 
         free_spots = possible_moves - forbidden_move[player]
-        free_spots_and_player_stones = free_spots | stone_list[player]
-        right_diagonal_patterns = list()
-        column_patterns = list()
-        left_diagonal_patterns = list()
-        line_patterns = list()
-        string_len = 7
-        low = -3
-        high = 4
+        # free_spots_and_player_stones = free_spots | stone_list[player]
+        left_diagonal_patterns, right_diagonal_patterns = list(), list()
+        line_patterns, column_patterns = list(), list()
+        string_len, low, high = 7, -3, 4
+
         ## get_line pattern
+        captures = player_captures[player]
         for x, y in stone_list[player]:
             c1 = ["."] * string_len
             c2 = ["."] * string_len
@@ -61,22 +61,30 @@ class CheckHeuristic():
                     c4[i + high - 1] = 'O'
                 elif (x - i, y + i) in free_spots:
                     c4[i + high - 1] = "_"
+
+                captures += len(CheckRules._getCaptures(x, y, stone_list, player, opponent))
+                
             line_patterns.append(''.join(c1))
             left_diagonal_patterns.append(''.join(c3))
             column_patterns.append(''.join(c2))
             right_diagonal_patterns.append(''.join(c4))
 
-        dic = {
-            "fiveInRow": 0,
-            "liveFour": 0,
-            "deadFour": 0,
-            "liveThree": 0,
-            "deadThree": 0,
-            "liveTwo": 0,
-            "deadTwo": 0,
-        }
+        # dic = {
+        #     "fiveInRow": 0,
+        #     "liveFour": 0,
+        #     "deadFour": 0,
+        #     "liveThree": 0,
+        #     "deadThree": 0,
+        #     "liveTwo": 0,
+        #     "deadTwo": 0,
+        #     "uselessOne": 0,
+        # }
+        dic = defaultdict(int)
+        dic['captures'] = captures
 
         def countPattern(dic, patterns):
+            if debug:
+                print(patterns)
             for pattern in patterns:
                 if "XXXXX" in pattern:
                     dic["fiveInRow"] += 1
@@ -88,10 +96,12 @@ class CheckHeuristic():
                     dic["deadThree"] += 1
                 elif any(elem in pattern for elem in ["_XXX_", "_XX_X", "XX_X_", "_X_XX", "X_XX_", "_XX__X", "X__XX_", "X_X_X"]):
                     dic["liveThree"] += 1
-                elif any(elem in pattern for elem in ["_OX__X_", "_X__XO_", "OX_X__", "__X_XO", "OXX___", "___XXO"]):
+                elif any(elem in pattern for elem in ["OX__X_", "_X__XO", "OX_X__", "__X_XO", "OXX___", "___XXO"]):
                     dic["deadTwo"] += 1
                 elif any(elem in pattern for elem in ["X___X", "X__X_", "_X__X", "_X_X_", "__XX__"]):
                     dic["liveTwo"] += 1
+                elif '__X__' in pattern:
+                    dic["uselessOne"] += 1
 
         countPattern(dic, line_patterns)
         countPattern(dic, column_patterns)

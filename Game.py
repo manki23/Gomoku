@@ -53,8 +53,8 @@ class Visualiser():
         self.opponent = self.WHITE
         self.stone_list = {self.WHITE: set(), self.BLACK: set()}
         self.possible_moves = set((x, y) for x in range(0, self.goban_size) for y in range(0, self.goban_size))
-        low = (self.goban_size // 2) - 2
-        high = (self.goban_size // 2) + 3
+        low = (self.goban_size // 2) - 1
+        high = (self.goban_size // 2) + 2
         self.playable_area = set((x, y) for x in range(low, high) for y in range(low, high))
         self.forbidden_move = {self.WHITE: set(), self.BLACK: set()}
         self.player_captures = {self.WHITE: 0, self.BLACK: 0}
@@ -135,8 +135,10 @@ class Visualiser():
 
     def playNextMove(self):
         if len(self.possible_moves) > 0:
-            (x, y) = Bot.getNextMove(self.playable_area, self.stone_list, self.player, self.opponent, self.forbidden_move, self.possible_moves)
+            (x, y) = Bot.getNextMove(self.playable_area, self.stone_list, self.player, self.opponent, self.forbidden_move, self.possible_moves, self.player_captures)
             self.playOneMove(x, y)
+            # print("DEBUG:", CheckHeuristic.getPatternDict(self.stone_list, self.opponent, self.player, self.possible_moves, self.forbidden_move, True))
+            # print("DEBUG:", CheckHeuristic.getPatternDict(self.stone_list, self.player, self.opponent, self.possible_moves, self.forbidden_move, True))
 
     def launch_game(self) -> None:
         self.gameover = False
@@ -242,6 +244,7 @@ class Visualiser():
 
     def _clearCaptures(self, captures):
         self.possible_moves |= captures
+        self.playable_area |= captures
         self.stone_list[self.opponent] -= captures 
         self.forbidden_move[self.opponent] -= captures
         self.forbidden_move[self.player] -= captures
