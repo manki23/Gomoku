@@ -21,52 +21,51 @@ class CheckHeuristic():
         high = 4
         ## get_line pattern
         for x, y in stone_list[player]:
-            c = ["."] * string_len
+            c1 = ["."] * string_len
+            c2 = ["."] * string_len
+            c3 = ["."] * string_len
+            c4 = ["."] * string_len
             for i in range(low, high):
-                c[i + high - 1] = '.'
+                c1[i + high - 1] = '.'
                 if (x + i, y) in stone_list[player]:
-                    c[i + high - 1] = 'X'
+                    c1[i + high - 1] = 'X'
                 elif (x + i, y) in stone_list[opponent]:
-                    c[i + high - 1] = 'O'
+                    c1[i + high - 1] = 'O'
                 elif (x + i, y) in free_spots:
-                    c[i + high - 1] = "_"
-            line_patterns.append(''.join(c))
+                    c1[i + high - 1] = "_"
+            
 
-        ## get column pattern
-            c = ["."] * string_len
-            for i in range(low, high):
-                c[i + high - 1] = '.'
+        ## get column patter
+                c2[i + high - 1] = '.'
                 if (x, y + i) in stone_list[player]:
-                    c[i + high - 1] = 'X'
+                    c2[i + high - 1] = 'X'
                 elif (x, y + i) in stone_list[opponent]:
-                    c[i + high - 1] = 'O'
+                    c2[i + high - 1] = 'O'
                 elif (x, y + i) in free_spots:
-                    c[i + high - 1] = "_"
-            column_patterns.append(''.join(c))
+                    c2[i + high - 1] = "_"
 
         ## get left diagonal pattern
-            c = ["."] * string_len
-            for i in range(low, high):
-                c[i + high - 1] = '.'
+                c3[i + high - 1] = '.'
                 if (x + i, y + i) in stone_list[player]:
-                    c[i + high - 1] = 'X'
+                    c3[i + high - 1] = 'X'
                 elif (x + i, y + i) in stone_list[opponent]:
-                    c[i + high - 1] = 'O'
+                    c3[i + high - 1] = 'O'
                 elif (x + i, y + i) in free_spots:
-                    c[i + high - 1] = "_"
-            left_diagonal_patterns.append(''.join(c))
+                    c3[i + high - 1] = "_"
 
         ## get right diagonal pattern
-            c = ["."] * string_len
-            for i in range(low, high):
-                c[i + high - 1] = '.'
+                c4[i + high - 1] = '.'
                 if (x - i, y + i) in stone_list[player]:
-                    c[i + high - 1] = 'X'
+                    c4[i + high - 1] = 'X'
                 elif (x - i, y + i) in stone_list[opponent]:
-                    c[i + high - 1] = 'O'
+                    c4[i + high - 1] = 'O'
                 elif (x - i, y + i) in free_spots:
-                    c[i + high - 1] = "_"
-            right_diagonal_patterns.append(''.join(c))
+                    c4[i + high - 1] = "_"
+            line_patterns.append(''.join(c1))
+            left_diagonal_patterns.append(''.join(c3))
+            column_patterns.append(''.join(c2))
+            right_diagonal_patterns.append(''.join(c4))
+
         dic = {
             "fiveInRow": 0,
             "liveFour": 0,

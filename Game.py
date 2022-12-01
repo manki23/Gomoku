@@ -135,7 +135,7 @@ class Visualiser():
 
     def playNextMove(self):
         if len(self.possible_moves) > 0:
-            (x, y) = Bot.getNextMove(self.playable_area, self.stone_list, self.player, self.opponent, self.forbidden_move)
+            (x, y) = Bot.getNextMove(self.playable_area, self.stone_list, self.player, self.opponent, self.forbidden_move, self.possible_moves)
             self.playOneMove(x, y)
 
     def launch_game(self) -> None:
