@@ -21,31 +21,35 @@ class Bot():
     @staticmethod
     def getBoardEval(stone_list, player, opponent, possible_moves, forbidden_move, player_captures):
 
+        # start = perf_counter()
         dic = CheckHeuristic.getPatternDict(
             stone_list, player, opponent, possible_moves, forbidden_move, player_captures)
+        # print(f'\rTIME CheckHeuristic: {perf_counter() - start}', end='')
+        # print()
+
+        # start = perf_counter()
         dicOpp = CheckHeuristic.getPatternDict(
             stone_list, opponent, player, possible_moves, forbidden_move, player_captures)
 
+        # print(f'\rTIME CheckHeuristicOpp : {perf_counter() - start}', end='')
+
+
         score = (100000 * (dic["fiveInRow"] - dicOpp["fiveInRow"]) +
-                 4800 * (dic["liveFour"] - dicOpp["liveFour"]) +
-                 500 * (dic["deadFour"] - dicOpp["deadFour"]) +
-                 500 * (dic["liveThree"] - dicOpp["liveThree"]) +
-                 200 * (dic["deadThree"] - dicOpp["deadThree"]) +
+                 10_000 * (dic["liveFour"] - dicOpp["liveFour"]) +
+                 1100 * (dic["deadFour"] - dicOpp["deadFour"]) +
+                 900 * (dic["liveThree"] - dicOpp["liveThree"]) +
+                 500 * (dic["deadThree"] - dicOpp["deadThree"]) +
                  50 * (dic["liveTwo"] - dicOpp["liveTwo"]) +
                  10 * (dic["deadTwo"] - dicOpp["deadTwo"]) -
-                 10 * (dic["uselessOne"] - dicOpp["uselessOne"]) +
-                 10_000 * (dic["captures"] - dicOpp["captures"])
+                 1 * (dic["uselessOne"] - dicOpp["uselessOne"]) +
+                 5_000 * (dic["captures"] - dicOpp["captures"])
                  )
 
-        #score = 1_000_000 * dic["fiveInRow"] + 15_000 * dic["liveFour"] + 1_500 * dic["deadFour"] + 10_000 * dic["liveThree"] + 5_000 * dic["deadThree"] + 50 * dic["liveTwo"] + 10 * dic["deadTwo"]
         return score
 
     @staticmethod
     def getNextMove(playable_area, stone_list, player, opponent, forbidden_move, p_moves, player_captures):
         start = perf_counter()
-        # best_move = [-1, -1, -1]
-        # minimize_opponent = [inf, inf, inf]
-        # CheckHeuristic.getPatternString(stone_list, player, opponent, playable_area, forbidden_move)
 
         best_move = (-1, -1)
         a, b = -inf, inf
@@ -66,7 +70,6 @@ class Bot():
                 return boardEval
             visited = set()
             if p == player:
-                max_score = -inf
                 for move in playable_area:
                     if move not in visited:
                         visitedNodes += 1
@@ -80,28 +83,21 @@ class Bot():
                         if depth == original_depth:
                             debug_arr[move[1]][move[0]] = f'{score}'
 
-                        if max_score < score and depth == original_depth:
+                        if alpha < score and depth == original_depth:
                             best_move = move
 
-                        max_score = max(score, max_score)
-
-                        # if alpha <= score and depth == original_depth:
-                        #    best_move = move
-                        #    print(f"tour: {player}", alpha)
 
                         stone_list[player].remove(move)
                         playable_area.add(move)
                         p_moves.add(move)
 
-                        if score >= beta:
-                            return max_score
+                        if alpha >= beta:
+                            return alpha
 
                         a = alpha = max(alpha, score)
-                        # if alpha < beta:
-                        #    break
-                return max_score
+
+                return alpha
             else:
-                min_score = inf
                 for move in playable_area:
                     if move not in visited:
                         visitedNodes += 1
@@ -115,19 +111,15 @@ class Bot():
 
                         # debug_arr[move[1]][move[0]] = f'{score}:{depth}'
 
-                        min_score = min(min_score, score)
-
                         stone_list[opponent].remove(move)
                         playable_area.add(move)
                         p_moves.add(move)
 
-                        if score <= alpha:
-                            return min_score
+                        if beta <= alpha:
+                            return beta
 
                         b = beta = min(beta, score)
-                        # if alpha >= beta:
-                        #    break
-                return min_score
+                return beta
 
         minimax(
             stone_list, player, original_depth, alpha, beta)
@@ -142,23 +134,7 @@ class Bot():
             for elem in line:
                 print(f"{elem:>8}", end=" ")
             print()
-        # print(best_move)
 
-        # for x, y in possible_moves - forbidden_move[player]:
-        #     # PLAY MOVE
-        #     stone_list[player].add((x, y))
-        #     possible_moves.remove((x, y))
-
-        #     my_value = Bot.getBoardEval(stone_list, player, opponent, possible_moves, forbidden_move)
-        #     opponent_value = Bot.getBoardEval(stone_list, opponent, player, possible_moves, forbidden_move)
-        #     my_value += 10_000 * len(CheckRules._getCaptures(x, y, stone_list, player, opponent))
-        #     if my_value > best_move[-1] and opponent_value < minimize_opponent[-1]:
-        #         best_move = [x, y, my_value]
-        #         minimize_opponent = [x, y, opponent_value]
-
-        #     # REVERSE MOVE
-        #     stone_list[player].remove((x, y))
-        #     possible_moves.add((x, y))
         print(f'\rTIME : {perf_counter() - start}', end='')
 
         return best_move

@@ -5,6 +5,7 @@ import sys
 from CheckRules import CheckRules
 from Bot import Bot
 from CheckHeuristic import CheckHeuristic
+# from collections import deque => TODO: imlement `undo` feature
 
 DEBUG = 0
 
@@ -58,6 +59,8 @@ class Visualiser():
         self.playable_area = set((x, y) for x in range(low, high) for y in range(low, high))
         self.forbidden_move = {self.WHITE: set(), self.BLACK: set()}
         self.player_captures = {self.WHITE: 0, self.BLACK: 0}
+        self.last_winning_move = {self.WHITE: None, self.BLACK: None}
+        self.last_move  = None
         self.gameover = False
         self.show_game = False
         self.turns = 0
@@ -180,10 +183,15 @@ class Visualiser():
         for (x, y) in self.stone_list[self.WHITE]:
             pos = (x * self.block_size + self.x_padding, y * self.block_size + self.y_padding)
             pygame.draw.circle(self.screen, Color.white, pos, self.stone_radius)
+        if self.last_move is not None:
+            x, y = self.last_move
+            pos = (x * self.block_size + self.x_padding, y * self.block_size + self.y_padding)
+            pygame.draw.circle(self.screen, Color.red, pos, self.stone_radius // 3)
+        
     
     def drawCapture(self) -> None:
-        left_captures = str(self.player_captures[self.WHITE])
-        right_captures = str(self.player_captures[self.BLACK])
+        left_captures = str(self.player_captures[self.WHITE] // 2)
+        right_captures = str(self.player_captures[self.BLACK] // 2)
         color = Color.black if self.player == self.BLACK else Color.white
         pygame.draw.circle(self.screen, color, (self.window_width // 2, (self.y_padding - self.block_size // 2) // 2), self.stone_radius * 2)
 
@@ -206,7 +214,7 @@ class Visualiser():
         pygame.draw.circle(self.screen, Color.black, (self.x_padding // 3, self.y_padding - self.block_size), self.stone_radius)
         pygame.draw.circle(self.screen, Color.white,(self.window_width - self.x_padding // 3, self.y_padding - self.block_size), self.stone_radius)
 
-    
+
     def drawExitButton(self) -> None:
         self.exit_button_text = self.font.render("EXIT", True, Color.goban_brown)
         self.exit_button_text_rect = self.exit_button_text.get_rect()
@@ -256,8 +264,6 @@ class Visualiser():
                     self.playable_area.add((x + i, y + j))
 
 
-
-
     def playOneMove(self, xx, yy):
         # ADD STONE TO PLAYED LIST:
         self.stone_list[self.player].add((xx, yy))
@@ -272,28 +278,43 @@ class Visualiser():
         self.player_captures[self.player] += len(captures)
         self.gameover = self.checkGameOver(xx, yy)
         self.opponent, self.player = self.player, self.BLACK if self.player == self.WHITE else self.WHITE
+        self.checkForWin()
         self.turns += 1
+        self.last_move =  (xx, yy)
 
     def _hasFiveAligned(self, x, y):
-        return (CheckRules._hasColumn(x, y, self.stone_list, self.player, self.goban_size)
+        return (x, y) in self.stone_list[self.player] and (CheckRules._hasColumn(x, y, self.stone_list, self.player, self.goban_size)
                     or CheckRules._hasLeftDiagonal(x, y, self.stone_list, self.player, self.goban_size)
                     or CheckRules._hasLine(x, y, self.stone_list, self.player, self.goban_size)
                     or CheckRules._hasRightDiagonal(x, y, self.stone_list, self.player, self.goban_size))
 
-    def letOpponentPlay(self, aligned):
+    def letOpponentPlay(self, aligned, x, y):
         for x, y in aligned:
+            # Check if we can cature one aligned stone
             if CheckRules._getOpponentCaptures(x, y, self.stone_list, self.player, self.opponent, self.possible_moves, self.forbidden_move):
-                print("aqui")
+                if self.last_winning_move[self.player] is not None:
+                    return False
+                print("Can capture one line stone")
+                self.last_winning_move[self.player] = (x, y)
                 return True
         for x, y in self.stone_list[self.player] - aligned:
+            # check if the opponent can win by capture
             if self.player_captures[self.opponent] == 8 and CheckRules._getOpponentCaptures(x, y, self.stone_list, self.player, self.opponent, self.possible_moves, self.forbidden_move):
-                print("here")
+                print("opponent can win by capture")
                 return True
         return False
 
+    def checkForWin(self):
+        print(self.last_winning_move[self.player], self.last_winning_move[self.opponent])
+        if self.last_winning_move[self.player] is not None and self.checkGameOver(*(self.last_winning_move[self.player])):
+            self.gameover = True
+        elif self.last_winning_move[self.player]:
+            self.last_winning_move[self.player] = None
+        return self.gameover
+
     def checkGameOver(self, xx, yy):
         aligned = self._hasFiveAligned(xx, yy)
-        if self.player_captures[self.player] >= 10 or (aligned and not self.letOpponentPlay(aligned)):
+        if self.player_captures[self.player] >= 10 or (aligned and not self.letOpponentPlay(aligned, xx, yy)):
             print(f"player {self.player} WON !") # TODO: CHANGE VICTORY MANAGEMENT
             return True
         return False

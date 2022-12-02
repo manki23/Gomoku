@@ -21,64 +21,50 @@ class CheckHeuristic():
         ## get_line pattern
         captures = player_captures[player]
         for x, y in stone_list[player]:
-            c1 = ["."] * string_len
-            c2 = ["."] * string_len
-            c3 = ["."] * string_len
-            c4 = ["."] * string_len
+            c1 = bytearray("." * string_len, 'utf-8')
+            c2 = bytearray("." * string_len, 'utf-8')
+            c3 = bytearray("." * string_len, 'utf-8')
+            c4 = bytearray("." * string_len, 'utf-8')
             for i in range(low, high):
-                c1[i + high - 1] = '.'
                 if (x + i, y) in stone_list[player]:
-                    c1[i + high - 1] = 'X'
+                    c1[i + high - 1] = ord('X')
                 elif (x + i, y) in stone_list[opponent]:
-                    c1[i + high - 1] = 'O'
+                    c1[i + high - 1] = ord('O')
                 elif (x + i, y) in free_spots:
-                    c1[i + high - 1] = "_"
+                    c1[i + high - 1] = ord("_")
             
 
         ## get column patter
-                c2[i + high - 1] = '.'
                 if (x, y + i) in stone_list[player]:
-                    c2[i + high - 1] = 'X'
+                    c2[i + high - 1] = ord('X')
                 elif (x, y + i) in stone_list[opponent]:
-                    c2[i + high - 1] = 'O'
+                    c2[i + high - 1] = ord('O')
                 elif (x, y + i) in free_spots:
-                    c2[i + high - 1] = "_"
+                    c2[i + high - 1] = ord("_")
 
         ## get left diagonal pattern
-                c3[i + high - 1] = '.'
                 if (x + i, y + i) in stone_list[player]:
-                    c3[i + high - 1] = 'X'
+                    c3[i + high - 1] = ord('X')
                 elif (x + i, y + i) in stone_list[opponent]:
-                    c3[i + high - 1] = 'O'
+                    c3[i + high - 1] = ord('O')
                 elif (x + i, y + i) in free_spots:
-                    c3[i + high - 1] = "_"
+                    c3[i + high - 1] = ord("_")
 
         ## get right diagonal pattern
-                c4[i + high - 1] = '.'
                 if (x - i, y + i) in stone_list[player]:
-                    c4[i + high - 1] = 'X'
+                    c4[i + high - 1] = ord('X')
                 elif (x - i, y + i) in stone_list[opponent]:
-                    c4[i + high - 1] = 'O'
+                    c4[i + high - 1] = ord('O')
                 elif (x - i, y + i) in free_spots:
-                    c4[i + high - 1] = "_"
+                    c4[i + high - 1] = ord("_")
 
                 captures += len(CheckRules._getCaptures(x, y, stone_list, player, opponent))
                 
-            line_patterns.append(''.join(c1))
-            left_diagonal_patterns.append(''.join(c3))
-            column_patterns.append(''.join(c2))
-            right_diagonal_patterns.append(''.join(c4))
+            line_patterns.append(c1)
+            left_diagonal_patterns.append(c3)
+            column_patterns.append(c2)
+            right_diagonal_patterns.append(c4)
 
-        # dic = {
-        #     "fiveInRow": 0,
-        #     "liveFour": 0,
-        #     "deadFour": 0,
-        #     "liveThree": 0,
-        #     "deadThree": 0,
-        #     "liveTwo": 0,
-        #     "deadTwo": 0,
-        #     "uselessOne": 0,
-        # }
         dic = defaultdict(int)
         dic['captures'] = captures
 
@@ -86,21 +72,21 @@ class CheckHeuristic():
             if debug:
                 print(patterns)
             for pattern in patterns:
-                if "XXXXX" in pattern:
+                if bytearray(b"XXXXX") in pattern:
                     dic["fiveInRow"] += 1
-                elif any(elem in pattern for elem in ["OXXXX_", "_XXXXO"]):
+                elif any(elem in pattern for elem in [bytearray(b"OXXXX_"), bytearray(b"_XXXXO")]):
                     dic["deadFour"] += 1
-                elif any(elem in pattern for elem in ["_XXXX_", "XXX_X", "X_XXX", "XX_XX"]):
+                elif any(elem in pattern for elem in [bytearray(b"_XXXX_"), bytearray(b"XXX_X"), bytearray(b"X_XXX"), bytearray(b"XX_XX")]):
                     dic["liveFour"] += 1
-                elif any(elem in pattern for elem in ["OXXX__", "__XXXO", "OXX_X_", "_X_XXO", "OX_XX_", "_XX_XO", "O_XXX_O"]):
+                elif any(elem in pattern for elem in [bytearray(b"OXXX__"), bytearray(b"__XXXO"), bytearray(b"OXX_X_"), bytearray(b"_X_XXO"), bytearray(b"OX_XX_"), bytearray(b"_XX_XO"), bytearray(b"O_XXX_O")]):
                     dic["deadThree"] += 1
-                elif any(elem in pattern for elem in ["_XXX_", "_XX_X", "XX_X_", "_X_XX", "X_XX_", "_XX__X", "X__XX_", "X_X_X"]):
+                elif any(elem in pattern for elem in [bytearray(b"_XXX_"), bytearray(b"_XX_X"), bytearray(b"XX_X_"), bytearray(b"_X_XX"), bytearray(b"X_XX_"), bytearray(b"_XX__X"), bytearray(b"X__XX_"), bytearray(b"X_X_X")]):
                     dic["liveThree"] += 1
-                elif any(elem in pattern for elem in ["OX__X_", "_X__XO", "OX_X__", "__X_XO", "OXX___", "___XXO"]):
+                elif any(elem in pattern for elem in [bytearray(b"OX__X_"), bytearray(b"_X__XO"), bytearray(b"OX_X__"), bytearray(b"__X_XO"), bytearray(b"OXX___"), bytearray(b"___XXO")]):
                     dic["deadTwo"] += 1
-                elif any(elem in pattern for elem in ["X___X", "X__X_", "_X__X", "_X_X_", "__XX__"]):
+                elif any(elem in pattern for elem in [bytearray(b"X___X"), bytearray(b"X__X_"), bytearray(b"_X__X"), bytearray(b"_X_X_"), bytearray(b"__XX__")]):
                     dic["liveTwo"] += 1
-                elif '__X__' in pattern:
+                elif bytearray(b'__X__') in pattern:
                     dic["uselessOne"] += 1
 
         countPattern(dic, line_patterns)
