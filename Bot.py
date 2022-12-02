@@ -34,14 +34,14 @@ class Bot():
         # print(f'\rTIME CheckHeuristicOpp : {perf_counter() - start}', end='')
 
 
-        score = (100000 * (dic["fiveInRow"] - dicOpp["fiveInRow"]) +
+        score = (600000 * (dic["fiveInRow"] - dicOpp["fiveInRow"]) +
                  10_000 * (dic["liveFour"] - dicOpp["liveFour"]) +
                  1100 * (dic["deadFour"] - dicOpp["deadFour"]) +
                  900 * (dic["liveThree"] - dicOpp["liveThree"]) +
                  500 * (dic["deadThree"] - dicOpp["deadThree"]) +
                  50 * (dic["liveTwo"] - dicOpp["liveTwo"]) +
                  10 * (dic["deadTwo"] - dicOpp["deadTwo"]) -
-                 1 * (dic["uselessOne"] - dicOpp["uselessOne"]) +
+                 10 * (dic["uselessOne"] - dicOpp["uselessOne"]) +
                  5_000 * (dic["captures"] - dicOpp["captures"])
                  )
 
@@ -53,7 +53,7 @@ class Bot():
 
         best_move = (-1, -1)
         a, b = -inf, inf
-        original_depth = 3
+        original_depth = 4
         alpha, beta = -inf, inf
         debug_arr = [[0 for _ in range(19)] for _ in range(19)]
         visitedNodes = 0
