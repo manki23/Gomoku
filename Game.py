@@ -5,7 +5,8 @@ import sys
 from CheckRules import CheckRules
 from Bot import Bot
 from CheckHeuristic import CheckHeuristic
-# from collections import deque => TODO: imlement `undo` feature
+import cProfile
+from collections import deque
 
 DEBUG = 0
 
@@ -18,11 +19,136 @@ class Color():
     line_brown = (198, 135, 104)
     red = (192, 57, 43)
 
-class Player():
-    def __init__(self, color: str, mode: str):
-        self.color = color
-        self.mode = mode
-        self.capture = 0
+class Game():
+    WHITE = 2
+    BLACK = 1
+    EMPTY = 0
+    def __init__(self,
+        stone_list=None,
+        possible_moves=None,
+        playable_area=None,
+        forbidden_moves=None,
+        player_captures=None,
+        player=Game.BLACK,
+        opponent=Game.WHITE,
+        goban_size=19,
+    ):
+        self.reset(stone_list, possible_moves, playable_area, forbidden_moves, player_captures, player, opponent, goban_size)
+
+    def reset(self,
+            stone_list=None,
+            possible_moves=None,
+            playable_area=None,
+            forbidden_moves=None,
+            player_captures=None,
+            player=Game.BLACK,
+            opponent=Game.WHITE,
+            goban_size=19,
+        ):
+        self.player = player
+        self.opponent = opponent
+        self.stone_list = stone_list if stone_list is not None else {self.WHITE: set(), self.BLACK: set()}
+        self.possible_moves = possible_moves if possible_moves is not None else set((x, y) for x in range(0, goban_size) for y in range(0, goban_size))
+        low = (goban_size // 2) - 1
+        high = (goban_size // 2) + 2
+        self.playable_area = playable_area if playable_area is not None else set((x, y) for x in range(low, high) for y in range(low, high))
+        self.forbidden_moves = forbidden_moves if forbidden_moves is not None else {self.WHITE: set(), self.BLACK: set()}
+        self.player_captures = player_captures if player_captures is not None else {self.WHITE: 0, self.BLACK: 0}
+        self.last_winning_move = {self.WHITE: None, self.BLACK: None}
+        self.gameover = False
+        self.show_game = False
+        self.turns = 0
+        self.goban_size = goban_size        
+        self.moves_history = deque([])
+    
+    def playOneMove(self, xx, yy):
+        # ADD STONE TO PLAYED LIST:
+        self.stone_list[self.player].add((xx, yy))
+        self.possible_moves.remove((xx, yy))
+        if (xx, yy) in self.playable_area:
+            self.playable_area.remove((xx, yy))
+        self.updateStoneAreaCoordinates(xx, yy)
+        self._updateForbiddenMoves()
+        # MANAGE CAPTURE:
+        captures = CheckRules._getCaptures(xx, yy, self, player)
+        self._clearCaptures(captures)
+        self.player_captures[self.player] += len(captures)
+
+        self.gameover = self.checkGameOver(xx, yy)
+        self.opponent, self.player = self.player, self.BLACK if self.player == self.WHITE else self.WHITE
+        self.checkForWin()
+        self.turns += 1
+        self.last_move =  (xx, yy)
+        self.moves_history.append((xx, yy))
+
+    def revertLastMove(self):
+        pass
+
+    def updateStoneAreaCoordinates(self, x, y):
+        for i in range(-2, 3):
+            for j in range(-2, 3):
+                if (x + i, y + j) in self.possible_moves:
+                    self.playable_area.add((x + i, y + j))
+    
+    def _updateForbiddenMoves(self):
+        self.forbidden_moves = {self.WHITE: set(), self.BLACK: set()}
+        for (x, y) in self.possible_moves:
+            if self._isCreatingDoubleThree(x, y, self.player):
+                self.forbidden_moves[self.player].add((x, y))
+            elif self._isCreatingDoubleThree(x, y, self.opponent):
+                self.forbidden_moves[self.opponent].add((x, y))
+
+    def _isCreatingDoubleThree(self, x, y, player):
+        return sum([
+            CheckRules._hasHorizontalFreeThree(x, y, self, player),
+            CheckRules._hasVerticalFreeThree(x, y, self, player),
+            CheckRules._hasRightDiagonalFreeThree(x, y, self, player),
+            CheckRules._hasLeftDiagonalFreeThree(x, y, self, player)]) >= 2
+
+    def _clearCaptures(self, captures):
+        self.possible_moves |= captures
+        self.playable_area |= captures
+        self.stone_list[self.opponent] -= captures 
+        self.forbidden_moves[self.opponent] -= captures
+        self.forbidden_moves[self.player] -= captures
+    
+
+    def checkGameOver(self, xx, yy):
+        aligned = self._hasFiveAligned(xx, yy)
+        if self.player_captures[self.player] >= 10 or (aligned and not self.letOpponentPlay(aligned, xx, yy)):
+            print(f"player {self.player} WON !") # TODO: CHANGE VICTORY MANAGEMENT
+            return True
+        return False
+
+    def _hasFiveAligned(self, x, y):
+        return (x, y) in self.stone_list[self.player] and (CheckRules._hasColumn(x, y, self)
+                    or CheckRules._hasLeftDiagonal(x, y, self)
+                    or CheckRules._hasLine(x, y, self)
+                    or CheckRules._hasRightDiagonal(x, y, self))
+
+    def letOpponentPlay(self, aligned, x, y):
+        for x, y in aligned:
+            # Check if we can cature one aligned stone
+            if CheckRules._getOpponentCaptures(x, y, self):
+                if self.last_winning_move[self.player] is not None:
+                    return False
+                # print("Can capture one line stone")
+                self.last_winning_move[self.player] = (x, y)
+                return True
+        for x, y in self.stone_list[self.player] - aligned:
+            # check if the opponent can win by capture
+            if self.player_captures[self.opponent] == 8 and CheckRules._getOpponentCaptures(x, y, self):
+                # print("opponent can win by capture")
+                return True
+        return False
+
+    def checkForWin(self):
+        if self.last_winning_move[self.player] is not None and self.checkGameOver(*(self.last_winning_move[self.player])):
+            self.gameover = True
+        elif self.last_winning_move[self.player]:
+            self.last_winning_move[self.player] = None
+        return self.gameover
+
 
 class Visualiser():
     def __init__(self, goban_size=19) -> None:
@@ -45,25 +171,14 @@ class Visualiser():
         self.font = pygame.font.Font('freesansbold.ttf', 32)
         self.clock = pygame.time.Clock()
         self.clock.tick(60)
-        self.resetGame()
+
         self.mode = {self.WHITE: "HUMAN", self.BLACK: "HUMAN"}
+
+        self.game = Game()
 
 
     def resetGame(self):
-        self.player = self.BLACK
-        self.opponent = self.WHITE
-        self.stone_list = {self.WHITE: set(), self.BLACK: set()}
-        self.possible_moves = set((x, y) for x in range(0, self.goban_size) for y in range(0, self.goban_size))
-        low = (self.goban_size // 2) - 1
-        high = (self.goban_size // 2) + 2
-        self.playable_area = set((x, y) for x in range(low, high) for y in range(low, high))
-        self.forbidden_move = {self.WHITE: set(), self.BLACK: set()}
-        self.player_captures = {self.WHITE: 0, self.BLACK: 0}
-        self.last_winning_move = {self.WHITE: None, self.BLACK: None}
-        self.last_move  = None
-        self.gameover = False
-        self.show_game = False
-        self.turns = 0
+        self.game.reset()
 
     def displayStart(self):
         # START
@@ -124,8 +239,8 @@ class Visualiser():
 
 
     def menu(self):
-        self.show_game = False
-        while not self.show_game:
+        self.game.show_game = False
+        while not self.game.show_game:
             self.screen.fill(Color.back_brown)
             self.checkEvents()
             self.displayStart()
@@ -137,22 +252,22 @@ class Visualiser():
 
 
     def playNextMove(self):
-        if len(self.possible_moves) > 0:
-            (x, y) = Bot.getNextMove(self.playable_area, self.stone_list, self.player, self.opponent, self.forbidden_move, self.possible_moves, self.player_captures)
+        if len(self.game.possible_moves) > 0:
+            (x, y) = Bot.getNextMove(self.game)
             self.playOneMove(x, y)
-            # print("DEBUG:", CheckHeuristic.getPatternDict(self.stone_list, self.opponent, self.player, self.possible_moves, self.forbidden_move, True))
-            # print("DEBUG:", CheckHeuristic.getPatternDict(self.stone_list, self.player, self.opponent, self.possible_moves, self.forbidden_move, True))
+            # print("DEBUG:", CheckHeuristic.getPatternDict(self.game.stone_list, self.game.opponent, self.game.player, self.game.possible_moves, self.game.forbidden_moves, True))
+            # print("DEBUG:", CheckHeuristic.getPatternDict(self.game, self.game.possible_moves, self.game.forbidden_moves, True))
 
     def launch_game(self) -> None:
-        self.gameover = False
-        while self.show_game:
+        self.game.gameover = False
+        while self.game.show_game:
             self.drawGrid()
             self.drawBoard()
             self.drawCapture()
             self.drawExitButton()
             self.shadowDisplay()
             self.checkEvents()
-            if self.mode[self.player] == "AI" and not self.gameover:
+            if self.mode[self.game.player] == "AI" and not self.game.gameover:
                 self.playNextMove()
             pygame.display.update()
         self.menu()
@@ -177,25 +292,25 @@ class Visualiser():
                 pygame.draw.rect(self.screen, Color.line_brown, rect, 1)
 
     def drawBoard(self) -> None:
-        for (x, y) in self.stone_list[self.BLACK]:
+        for (x, y) in self.game.stone_list[self.BLACK]:
             pos = (x * self.block_size + self.x_padding, y * self.block_size + self.y_padding)
             pygame.draw.circle(self.screen, Color.black, pos, self.stone_radius)
-        for (x, y) in self.stone_list[self.WHITE]:
+        for (x, y) in self.game.stone_list[self.WHITE]:
             pos = (x * self.block_size + self.x_padding, y * self.block_size + self.y_padding)
             pygame.draw.circle(self.screen, Color.white, pos, self.stone_radius)
-        if self.last_move is not None:
-            x, y = self.last_move
+        if self.game.moves_history:
+            x, y = self.game.moves_history[-1]
             pos = (x * self.block_size + self.x_padding, y * self.block_size + self.y_padding)
             pygame.draw.circle(self.screen, Color.red, pos, self.stone_radius // 3)
         
     
     def drawCapture(self) -> None:
-        left_captures = str(self.player_captures[self.WHITE] // 2)
-        right_captures = str(self.player_captures[self.BLACK] // 2)
-        color = Color.black if self.player == self.BLACK else Color.white
+        left_captures = str(self.game.player_captures[self.WHITE] // 2)
+        right_captures = str(self.game.player_captures[self.BLACK] // 2)
+        color = Color.black if self.game.player == self.BLACK else Color.white
         pygame.draw.circle(self.screen, color, (self.window_width // 2, (self.y_padding - self.block_size // 2) // 2), self.stone_radius * 2)
 
-        self.turns_text = self.font.render(f"TURN: {self.turns}", True, Color.goban_brown)
+        self.turns_text = self.font.render(f"TURN: {self.game.turns}", True, Color.goban_brown)
         self.turns_text_rect = self.turns_text.get_rect()
         self.turns_text_rect.center = (self.window_width // 2, 14 * self.window_height // 15)
         self.screen.blit(self.turns_text, self.turns_text_rect)
@@ -221,16 +336,9 @@ class Visualiser():
         self.exit_button_text_rect.center = (1 * self.window_width // 12, 11 * self.window_height // 12)
         self.screen.blit(self.exit_button_text, self.exit_button_text_rect)
 
-    def _updateForbiddenMoves(self):
-        self.forbidden_move = {self.WHITE: set(), self.BLACK: set()}
-        for (x, y) in self.possible_moves:
-            if self._isCreatingDoubleThree(x, y, self.player):
-                self.forbidden_move[self.player].add((x, y))
-            elif self._isCreatingDoubleThree(x, y, self.opponent):
-                self.forbidden_move[self.opponent].add((x, y))
 
     def shadowDisplay(self) -> None:
-        if self.gameover:
+        if self.game.gameover:
             return
         x_mouse, y_mouse = pygame.mouse.get_pos()
         x = self._getCursorZone(x_mouse, self.x_padding)
@@ -239,85 +347,10 @@ class Visualiser():
         zone_padding = self.block_size // 2
         xx = (x - self.x_padding) // self.block_size
         yy = (y - self.y_padding) // self.block_size
-        if (xx, yy) in (self.possible_moves - self.forbidden_move[self.player]):
+        if (xx, yy) in (self.game.possible_moves - self.game.forbidden_moves[self.game.player]):
             pygame.draw.circle(self.screen, Color.grey, (x, y), self.stone_radius)
 
 
-    def _isCreatingDoubleThree(self, x, y, player):
-        return sum([
-            CheckRules._hasHorizontalFreeThree(x, y, self.stone_list, player, self.possible_moves),
-            CheckRules._hasVerticalFreeThree(x, y, self.stone_list, player, self.possible_moves),
-            CheckRules._hasRightDiagonalFreeThree(x, y, self.stone_list, player, self.possible_moves),
-            CheckRules._hasLeftDiagonalFreeThree(x, y, self.stone_list, player, self.possible_moves)]) >= 2
-
-    def _clearCaptures(self, captures):
-        self.possible_moves |= captures
-        self.playable_area |= captures
-        self.stone_list[self.opponent] -= captures 
-        self.forbidden_move[self.opponent] -= captures
-        self.forbidden_move[self.player] -= captures
-
-    def updateStoneAreaCoordinates(self, x, y):
-        for i in range(-2, 3):
-            for j in range(-2, 3):
-                if (x + i, y + j) in self.possible_moves:
-                    self.playable_area.add((x + i, y + j))
-
-
-    def playOneMove(self, xx, yy):
-        # ADD STONE TO PLAYED LIST:
-        self.stone_list[self.player].add((xx, yy))
-        self.possible_moves.remove((xx, yy))
-        if (xx, yy) in self.playable_area:
-            self.playable_area.remove((xx, yy))
-        self.updateStoneAreaCoordinates(xx, yy)
-        self._updateForbiddenMoves()
-        # MANAGE CAPTURE:
-        captures = CheckRules._getCaptures(xx, yy, self.stone_list, self.player, self.opponent)
-        self._clearCaptures(captures)
-        self.player_captures[self.player] += len(captures)
-        self.gameover = self.checkGameOver(xx, yy)
-        self.opponent, self.player = self.player, self.BLACK if self.player == self.WHITE else self.WHITE
-        self.checkForWin()
-        self.turns += 1
-        self.last_move =  (xx, yy)
-
-    def _hasFiveAligned(self, x, y):
-        return (x, y) in self.stone_list[self.player] and (CheckRules._hasColumn(x, y, self.stone_list, self.player, self.goban_size)
-                    or CheckRules._hasLeftDiagonal(x, y, self.stone_list, self.player, self.goban_size)
-                    or CheckRules._hasLine(x, y, self.stone_list, self.player, self.goban_size)
-                    or CheckRules._hasRightDiagonal(x, y, self.stone_list, self.player, self.goban_size))
-
-    def letOpponentPlay(self, aligned, x, y):
-        for x, y in aligned:
-            # Check if we can cature one aligned stone
-            if CheckRules._getOpponentCaptures(x, y, self.stone_list, self.player, self.opponent, self.possible_moves, self.forbidden_move):
-                if self.last_winning_move[self.player] is not None:
-                    return False
-                print("Can capture one line stone")
-                self.last_winning_move[self.player] = (x, y)
-                return True
-        for x, y in self.stone_list[self.player] - aligned:
-            # check if the opponent can win by capture
-            if self.player_captures[self.opponent] == 8 and CheckRules._getOpponentCaptures(x, y, self.stone_list, self.player, self.opponent, self.possible_moves, self.forbidden_move):
-                print("opponent can win by capture")
-                return True
-        return False
-
-    def checkForWin(self):
-        print(self.last_winning_move[self.player], self.last_winning_move[self.opponent])
-        if self.last_winning_move[self.player] is not None and self.checkGameOver(*(self.last_winning_move[self.player])):
-            self.gameover = True
-        elif self.last_winning_move[self.player]:
-            self.last_winning_move[self.player] = None
-        return self.gameover
-
-    def checkGameOver(self, xx, yy):
-        aligned = self._hasFiveAligned(xx, yy)
-        if self.player_captures[self.player] >= 10 or (aligned and not self.letOpponentPlay(aligned, xx, yy)):
-            print(f"player {self.player} WON !") # TODO: CHANGE VICTORY MANAGEMENT
-            return True
-        return False
 
     def checkMousePressed(self) -> None:
         x_mouse, y_mouse = pygame.mouse.get_pos()
@@ -330,7 +363,7 @@ class Visualiser():
             xx = (x - self.x_padding) // self.block_size
             yy = (y - self.y_padding) // self.block_size
 
-            if (xx, yy) in (self.possible_moves - self.forbidden_move[self.player]):
+            if (xx, yy) in (self.game.possible_moves - self.game.forbidden_moves[self.game.player]):
                 self.playOneMove(xx, yy)
 
 
@@ -338,12 +371,12 @@ class Visualiser():
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONUP:
                 # print(event.pos)
-                if self.show_game and self.exit_button_text_rect.collidepoint(event.pos):
+                if self.game.show_game and self.exit_button_text_rect.collidepoint(event.pos):
                     self.resetGame()
-                elif self.show_game and self.mode[self.player] == "HUMAN" and not self.gameover:
+                elif self.game.show_game and self.mode[self.game.player] == "HUMAN" and not self.game.gameover:
                     self.checkMousePressed()
                 elif self.start_text_rect.collidepoint(event.pos):
-                    self.show_game = True
+                    self.game.show_game = True
                 elif self.p1_mode_text_rect.collidepoint(event.pos):
                     self.mode[self.BLACK] = self.updateModeText(self.mode[self.BLACK])
                 elif self.p2_mode_text_rect.collidepoint(event.pos):
@@ -356,8 +389,8 @@ class Visualiser():
                     pygame.quit()
                     exit()
                 elif event.key == pygame.K_a:
-                    self.opponent = self.player
-                    self.player = self.BLACK if self.player == self.WHITE else self.WHITE
+                    self.game.opponent = self.game.player
+                    self.game.player = self.BLACK if self.game.player == self.WHITE else self.WHITE
                 elif event.key == pygame.K_r:
                     self.resetGame()
 

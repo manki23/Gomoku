@@ -4,91 +4,80 @@ from CheckRules import CheckRules
 
 class CheckHeuristic():
     @staticmethod
-    def hasStonePatternInList(stone_list, search_list):
-        for x, y in search_list:
-            if (x, y) not in stone_list:
-                return False
-        return True
-
-    @staticmethod
-    def getPatternDict(stone_list, player, opponent, possible_moves, forbidden_move, player_captures, debug=False): 
-        free_spots = possible_moves - forbidden_move[player]
-        # free_spots_and_player_stones = free_spots | stone_list[player]
-        left_diagonal_patterns, right_diagonal_patterns = list(), list()
-        line_patterns, column_patterns = list(), list()
+    # TODO: change possible moves here to full possible move (currently is playable area)
+    def getPatternDict(bot_game, debug=False): 
+        forbidden_moves = bot_game.forbidden_moves[bot_game.player]
+        patterns = list()
         string_len, low, high = 7, -3, 4
+        isOutsideBoard = lambda x, y: x < 0 or y < 0 or x >= bot_game.goban_size or y >= bot_game.goban_size or (x, y) in forbidden_moves
+        stone_list = bot_game.stone_list[bot_game.player]
+        captures = bot_game.player_captures[bot_game.player]
 
-        ## get_line pattern
-        captures = player_captures[player]
-        for x, y in stone_list[player]:
-            c1 = ''
-            c2 = ''
-            c3 = ''
-            c4 = ''
+        for x, y in stone_list:
+            c1 = ['_'] * string_len
+            c2 = ['_'] * string_len
+            c3 = ['_'] * string_len
+            c4 = ['_'] * string_len
+
             for i in range(low, high):
-                if (x + i, y) in stone_list[player]:
-                    c1 += 'X'
-                elif (x + i, y) in stone_list[opponent]:
-                    c1 += 'O'
-                elif (x + i, y) in free_spots:
-                    c1 += '_'
-                else:
-                    c1 += '.'
+                ## get_line pattern
+                coord = (x + i, y)
+                if coord in stone_list[bot_game.player]:
+                    c1[i-low] = 'X'
+                elif coord in stone_list[bot_game.opponent]:
+                    c1[i-low] = 'O'
+                elif isOutsideBoard(*coord):
+                    c1[i-low] = '.'
 
+                ## get column patter
+                coord = (x, y + i)
+                if coord in stone_list[bot_game.player]:
+                    c2[i-low] = 'X'
+                elif coord in stone_list[bot_game.opponent]:
+                    c2[i-low] = 'O'
+                elif isOutsideBoard(*coord):
+                    c2[i-low] = '.'
 
-        ## get column patter
-                if (x, y + i) in stone_list[player]:
-                    c2 += 'X'
-                elif (x, y + i) in stone_list[opponent]:
-                    c2 += 'O'
-                elif (x, y + i) in free_spots:
-                    c2 += '_'
-                else:
-                    c2 += '.'
+                ## get left diagonal pattern
+                coord = (x + i, y + i)
+                if coord in stone_list[bot_game.player]:
+                    c3[i-low] = 'X'
+                elif coord in stone_list[bot_game.opponent]:
+                    c3[i-low] = 'O'
+                elif isOutsideBoard(*coord):
+                    c3[i-low] = '.'
 
-        ## get left diagonal pattern
-                if (x + i, y + i) in stone_list[player]:
-                    c3 += 'X'
-                elif (x + i, y + i) in stone_list[opponent]:
-                    c3 += 'O'
-                elif (x + i, y + i) in free_spots:
-                    c3 += '_'
-                else:
-                    c3 += '.'
+                ## get right diagonal pattern
+                coord = (x - i, y + i)
+                if coord in stone_list[bot_game.player]:
+                    c4[i-low] = 'X'
+                elif coord in stone_list[bot_game.opponent]:
+                    c4[i-low] = 'O'
+                elif isOutsideBoard(*coord):
+                    c4[i-low] = '.'
 
-        ## get right diagonal pattern
-                if (x - i, y + i) in stone_list[player]:
-                    c4 += 'X'
-                elif (x - i, y + i) in stone_list[opponent]:
-                    c4 += 'O'
-                elif (x - i, y + i) in free_spots:
-                    c4 += '_'
-                else:
-                    c4 += '.'
-
-                captures += len(CheckRules._getCaptures(x, y, stone_list, player, opponent))
-
-            line_patterns.append(c1)
-            left_diagonal_patterns.append(c3)
-            column_patterns.append(c2)
-            right_diagonal_patterns.append(c4)
+            captures += sum('XOOX' in elem for elem in (c1, c2, c3, c4)) * 2
+            patterns.append(''.join(c1))
+            patterns.append(''.join(c2))
+            patterns.append(''.join(c3))
+            patterns.append(''.join(c4))
 
         dic = defaultdict(int)
         dic['captures'] = captures
 
 
-        def countPattern(dic, patterns):
+        def _countPattern(dic, patterns):
             fiveInRowSet = {'XXXXXXX', '_XXXXX_', 'OXXXXXO', '_XXXXXO', 'XXXXXXO', 'OXXXXXX', 'OXXXXX_', '_XXXXXX', 'XXXXXX_'}
-            deadFourSet = {'OXXX_XO', '_XXXX__', 'XXXXXOO', '_XXOXXX', 'OXXX_X_', 'XXXOXX_', 'O_XXXXO', 'XXXXXX_', 'OX_XXXO',
-                            '_XXOXX_', 'OX_XXXX', 'XX_XXXO', 'XXXXXXX', 'XXXXXOX', '_OXXXX_', 'O_XXXX_', 'OXXOXXX', '_XXXX_X',
-                            '_XXOXXO', '_OXXXXO', '_XXXXOX', 'OXXX_XX', 'XX_XXXX', 'XXXX_XO', 'OXXOXX_', 'XXXXXXO', 'X_XXXXX',
-                            'OX_XXX_', 'XOXXXXO', 'XOXXXXX', '_XXX_X_', 'XXXX_XX', 'OXX_XXO', 'XXXOXXO', 'OXXXXXX', 'OXXOXXO',
-                            'OXXXXOX', 'OOXXXX_', 'XXXX_X_', 'XXXOXXX', 'XXXXXO_', '_XXXXXO', 'OXX_XXX', '_XXXXXX', '_XXXXX_',
-                            'XOXXXX_', '_XXXXOO', 'XXX_XXO', 'XXX_XX_', 'OXXXXO_', 'XXXXX__', 'XXXXX_X', '_XX_XX_', '_XXXX_O',
-                            '_X_XXX_', 'X_XXXX_', '_OXXXXX', 'OXXXXX_', 'OXXXX__', 'XXXXX_O', '_XX_XXX', '_XXX_XX', '_X_XXXO',
-                            '_XX_XXO', 'OXXXX_O', 'OOXXXXX', 'OXXXX_X', '_XXX_XO', 'X_XXXXO', '_X_XXXX', '_XXXXO_', 'OXXXXXO',
-                            'OOXXXXO', '__XXXXX', 'OXX_XX_', 'XXX_XXX', 'O_XXXXX', '__XXXX_', 'XX_XXX_', 'OXXXXOO', '__XXXXO'}
-            liveFourSet = {'OXXXX__', 'OXXXX_O', 'OXXXX_X', '_OXXXX_', 'OOXXXX_', 'XOXXXX_'}
+            liveFourSet = {'X_XXXXX', '_X_XXXO', 'OX_XXXX', 'XXX_X_X', '_OXX_XX', 'XX_XXO_', 'X_XX_XX', 'XOX_XXX', '_OX_XXX',
+                            '_X_XXXX', 'X_XXXXO', 'X_XXX_O', '_X_XXX_', 'XXXXX_X', '__XXXX_', 'OXXXX_X', '__X_XXX', 'XX_XX_X',
+                            'XXX_XX_', 'XX_XX__', 'XX_XX_O', 'OXXX_XX', 'XOXXX_X', 'XXX_XO_', '_XXXX__', 'OX_XXXO', 'X_XXXOO',
+                            'XXXX_XO', 'XXX_X_O', 'XOXX_XX', 'XXX_XOX', 'XXX_XOO', 'XXXX_X_', 'XXX_XXO', 'OX_XXX_', 'X_X_XXX',
+                            '_XXX_XX', '_XX_XX_', 'XXX_XXX', 'XXXX_XX', 'XX_XXX_', 'X_XXXO_', 'X_XXX__', 'OOXX_XX', 'XXX_X__',
+                            'XX_XXOO', 'OXX_XXO', '_XX_XXX', '_XXX_X_', 'O_XXX_X', 'OXX_XXX', 'XX_XXXO', 'X_XXX_X', 'X_XXXOX',
+                            'X_XXXX_', '_XXXX_X', 'XX_XXXX', '__XX_XX', 'OXX_XX_', 'XX_XXOX', 'OOX_XXX', 'O_XXXX_', 'O_X_XXX',
+                            'OOXXX_X', '_XXX_XO', 'OXXX_XO', '__XXX_X', '_OXXX_X', 'O_XX_XX', '_XXXX_O', 'OXXX_X_', '_XX_XXO'}
+
+            deadFourSet = {'OXXXX__', 'OXXXX_O', 'OXXXX_X', '_OXXXX_', 'OOXXXX_', 'XOXXXX_'}
             deadThreeSet = {'OXXX__X', 'OXXX__O', 'OXXX___', '_OXXX__', 'OOXXX__', 'XOXXX__', '___XXXO', 'X__XXXO', 'O__XXXO',
                             '__XXXO_', '__XXXOO', '__XXXOX', 'OXX_X_O', 'OXX_X_X', 'OXX_X__', '_OXX_X_', 'OOXX_X_', 'XOXX_X_',
                             'O_X_XXO', 'X_X_XXO', '__X_XXO', '_X_XXO_', '_X_XXOO', '_X_XXOX', 'OOX_XX_', 'XOX_XX_', '_OX_XX_',
@@ -151,12 +140,7 @@ class CheckHeuristic():
                 elif pattern in uselessOneSet:
                     dic["uselessOne"] += 1
 
-        countPattern(dic, line_patterns)
-        countPattern(dic, column_patterns)
-        countPattern(dic, left_diagonal_patterns)
-        countPattern(dic, right_diagonal_patterns)
-
-        # print(json.dumps(dic, indent=4))
+        _countPattern(dic, patterns)
 
         return dic
 

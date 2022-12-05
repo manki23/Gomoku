@@ -219,7 +219,7 @@ class CheckRules():
         return False
 
     @staticmethod
-    def _hasHorizontalFreeThree(x, y, stone_list, player, possible_moves):
+    def _hasHorizontalFreeThree(x, y, game, player):
         ######################### Pattern X000X
         if ((x + 1, y) in stone_list[player]
             and (x + 2, y) in stone_list[player]
