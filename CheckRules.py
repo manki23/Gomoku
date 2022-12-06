@@ -125,50 +125,50 @@ class CheckRules():
         return res
 
     @staticmethod
-    def getOpponentCaptures(x, y, game, player, opponent):
+    def getOpponentCaptures(x, y, game):
         res = set()
-        op_free_spots = game.possible_moves - game.forbidden_move[opponent]
+        op_free_spots = game.possible_moves - game.forbidden_moves[game.opponent]
         stone_list = game.stone_list
 
         if (
-            (((x - 1, y) in stone_list[opponent] and (x + 2, y) in op_free_spots) or 
-            ((x + 2, y) in stone_list[opponent] and (x - 1, y) in op_free_spots))
-            and (x + 1, y) in stone_list[player] ):
+            (((x - 1, y) in stone_list[game.opponent] and (x + 2, y) in op_free_spots) or 
+            ((x + 2, y) in stone_list[game.opponent] and (x - 1, y) in op_free_spots))
+            and (x + 1, y) in stone_list[game.player] ):
             return True
         if (
-            (((x + 1, y) in stone_list[opponent] and (x - 2, y) in op_free_spots) or
-            ((x - 2, y) in stone_list[opponent] and (x + 1, y) in op_free_spots))
-            and (x - 1, y) in stone_list[player]):
+            (((x + 1, y) in stone_list[game.opponent] and (x - 2, y) in op_free_spots) or
+            ((x - 2, y) in stone_list[game.opponent] and (x + 1, y) in op_free_spots))
+            and (x - 1, y) in stone_list[game.player]):
             return True           
         if (
-            (((x, y + 1) in stone_list[opponent] and (x, y - 2) in op_free_spots) or
-            ((x, y - 2) in stone_list[opponent] and (x, y + 1) in op_free_spots)) 
-            and (x, y - 1) in stone_list[player]):
+            (((x, y + 1) in stone_list[game.opponent] and (x, y - 2) in op_free_spots) or
+            ((x, y - 2) in stone_list[game.opponent] and (x, y + 1) in op_free_spots)) 
+            and (x, y - 1) in stone_list[game.player]):
             return True
         if (
-            (((x, y - 1) in stone_list[opponent] and (x, y + 2) in op_free_spots) or
-            ((x, y + 2) in stone_list[opponent] and (x, y - 1) in op_free_spots))
-            and (x, y + 1) in stone_list[player]):
+            (((x, y - 1) in stone_list[game.opponent] and (x, y + 2) in op_free_spots) or
+            ((x, y + 2) in stone_list[game.opponent] and (x, y - 1) in op_free_spots))
+            and (x, y + 1) in stone_list[game.player]):
             return True
         if (
-            (((x - 1, y - 1) in stone_list[opponent] and (x + 2, y + 2) in op_free_spots) or
-            ((x + 2, y + 2) in stone_list[opponent] and (x - 1, y - 1) in op_free_spots))
-            and (x + 1, y + 1) in stone_list[player]):
+            (((x - 1, y - 1) in stone_list[game.opponent] and (x + 2, y + 2) in op_free_spots) or
+            ((x + 2, y + 2) in stone_list[game.opponent] and (x - 1, y - 1) in op_free_spots))
+            and (x + 1, y + 1) in stone_list[game.player]):
             return True
         if (
-            (((x + 1, y + 1) in stone_list[opponent] and (x - 2, y - 2) in op_free_spots) or
-            ((x - 2, y - 2) in stone_list[opponent] and (x + 1, y + 1) in op_free_spots))
-            and (x - 1, y - 1) in stone_list[player]):
+            (((x + 1, y + 1) in stone_list[game.opponent] and (x - 2, y - 2) in op_free_spots) or
+            ((x - 2, y - 2) in stone_list[game.opponent] and (x + 1, y + 1) in op_free_spots))
+            and (x - 1, y - 1) in stone_list[game.player]):
             return True
         if (
-            (((x - 1, y + 1) in stone_list[opponent] and (x + 2, y - 2) in op_free_spots) or
-            ((x + 2, y - 2) in stone_list[opponent] and (x - 1, y + 1) in op_free_spots))
-            and (x + 1, y - 1) in stone_list[player]):
+            (((x - 1, y + 1) in stone_list[game.opponent] and (x + 2, y - 2) in op_free_spots) or
+            ((x + 2, y - 2) in stone_list[game.opponent] and (x - 1, y + 1) in op_free_spots))
+            and (x + 1, y - 1) in stone_list[game.player]):
             return True
         if (
-            (((x + 1, y - 1) in stone_list[opponent] and (x - 2, y + 2) in op_free_spots) or
-            ((x - 2, y + 2) in stone_list[opponent] and (x + 1, y - 1) in op_free_spots))
-            and (x - 1, y + 1) in stone_list[player]):
+            (((x + 1, y - 1) in stone_list[game.opponent] and (x - 2, y + 2) in op_free_spots) or
+            ((x - 2, y + 2) in stone_list[game.opponent] and (x + 1, y - 1) in op_free_spots))
+            and (x - 1, y + 1) in stone_list[game.player]):
             return True
         return False
 

@@ -5,15 +5,15 @@ from CheckRules import CheckRules
 class CheckHeuristic():
     @staticmethod
     # TODO: change possible moves here to full possible move (currently is playable area)
-    def getPatternDict(bot_game, debug=False): 
-        forbidden_moves = bot_game.forbidden_moves[bot_game.player]
+    def getPatternDict(bot_game, player, opponent, debug=False): 
+        forbidden_moves = bot_game.forbidden_moves[player]
         patterns = list()
         string_len, low, high = 7, -3, 4
         isOutsideBoard = lambda x, y: x < 0 or y < 0 or x >= bot_game.goban_size or y >= bot_game.goban_size or (x, y) in forbidden_moves
-        stone_list = bot_game.stone_list[bot_game.player]
-        captures = bot_game.player_captures[bot_game.player]
+        stone_list = bot_game.stone_list
+        captures = bot_game.player_captures[player]
 
-        for x, y in stone_list:
+        for x, y in stone_list[player]:
             c1 = ['_'] * string_len
             c2 = ['_'] * string_len
             c3 = ['_'] * string_len
@@ -22,36 +22,36 @@ class CheckHeuristic():
             for i in range(low, high):
                 ## get_line pattern
                 coord = (x + i, y)
-                if coord in stone_list[bot_game.player]:
+                if coord in stone_list[player]:
                     c1[i-low] = 'X'
-                elif coord in stone_list[bot_game.opponent]:
+                elif coord in stone_list[opponent]:
                     c1[i-low] = 'O'
                 elif isOutsideBoard(*coord):
                     c1[i-low] = '.'
 
                 ## get column patter
                 coord = (x, y + i)
-                if coord in stone_list[bot_game.player]:
+                if coord in stone_list[player]:
                     c2[i-low] = 'X'
-                elif coord in stone_list[bot_game.opponent]:
+                elif coord in stone_list[opponent]:
                     c2[i-low] = 'O'
                 elif isOutsideBoard(*coord):
                     c2[i-low] = '.'
 
                 ## get left diagonal pattern
                 coord = (x + i, y + i)
-                if coord in stone_list[bot_game.player]:
+                if coord in stone_list[player]:
                     c3[i-low] = 'X'
-                elif coord in stone_list[bot_game.opponent]:
+                elif coord in stone_list[opponent]:
                     c3[i-low] = 'O'
                 elif isOutsideBoard(*coord):
                     c3[i-low] = '.'
 
                 ## get right diagonal pattern
                 coord = (x - i, y + i)
-                if coord in stone_list[bot_game.player]:
+                if coord in stone_list[player]:
                     c4[i-low] = 'X'
-                elif coord in stone_list[bot_game.opponent]:
+                elif coord in stone_list[opponent]:
                     c4[i-low] = 'O'
                 elif isOutsideBoard(*coord):
                     c4[i-low] = '.'
