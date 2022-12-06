@@ -1,21 +1,21 @@
 class CheckRules():
     @staticmethod
-    def _checkCondition(x, y, stone_list, player, goban_size):
-        return ((x, y) in stone_list[player]
-                and x >= 0 and x < goban_size
-                and y >= 0 and y < goban_size)
+    def _checkCondition(x, y, game):
+        return ((x, y) in game.stone_list[game.player]
+                and 0 <= x < game.goban_size
+                and 0 <= y < game.goban_size)
 
     @staticmethod
-    def _hasLine(x, y, stone_list, player, goban_size):
+    def hasLine(x, y, game):
         i = 1
         count = 1
         res = {(x, y)}
-        while i <= 4 and CheckRules._checkCondition(x - i, y, stone_list, player, goban_size):
+        while i <= 4 and CheckRules._checkCondition(x - i, y, game):
             count += 1
             res.add((x - i, y))
             i += 1
         i = 1
-        while i <= 4 and CheckRules._checkCondition(x + i, y, stone_list, player, goban_size):
+        while i <= 4 and CheckRules._checkCondition(x + i, y, game):
             count += 1
             res.add((x + i, y))
             i += 1
@@ -24,16 +24,16 @@ class CheckRules():
         return set()
  
     @staticmethod   
-    def _hasColumn(x, y, stone_list, player, goban_size):
+    def hasColumn(x, y, game):
         i = 1
         count = 1
         res = {(x, y)}
-        while i <= 4 and CheckRules._checkCondition(x, y - i, stone_list, player, goban_size):
+        while i <= 4 and CheckRules._checkCondition(x, y - i, game):
             count += 1
             res.add((x, y - i))
             i += 1
         i = 1
-        while i <= 4 and CheckRules._checkCondition(x, y + i, stone_list, player, goban_size):
+        while i <= 4 and CheckRules._checkCondition(x, y + i, game):
             count += 1
             res.add((x, y + i))
             i += 1
@@ -42,16 +42,16 @@ class CheckRules():
         return set()
 
     @staticmethod
-    def _hasLeftDiagonal(x, y, stone_list, player, goban_size):
+    def hasLeftDiagonal(x, y, game):
         i = 1
         count = 1
         res = {(x, y)}
-        while i <= 4 and CheckRules._checkCondition(x - i, y - i, stone_list, player, goban_size):
+        while i <= 4 and CheckRules._checkCondition(x - i, y - i, game):
             count += 1
             res.add((x - i, y - i))
             i += 1
         i = 1
-        while i <= 4 and CheckRules._checkCondition(x + i, y + i, stone_list, player, goban_size):
+        while i <= 4 and CheckRules._checkCondition(x + i, y + i, game):
             count += 1
             res.add((x + i, y + i))
             i += 1
@@ -60,16 +60,16 @@ class CheckRules():
         return set()
 
     @staticmethod
-    def _hasRightDiagonal(x, y, stone_list, player, goban_size):
+    def hasRightDiagonal(x, y, game):
         i = 1
         count = 1
         res = {(x, y)}
-        while i <= 4 and CheckRules._checkCondition(x + i, y - i, stone_list, player, goban_size):
+        while i <= 4 and CheckRules._checkCondition(x + i, y - i, game):
             count += 1
             res.add((x + i, y - i))
             i += 1
         i = 1
-        while i <= 4 and CheckRules._checkCondition(x - i, y + i, stone_list, player, goban_size):
+        while i <= 4 and CheckRules._checkCondition(x - i, y + i, game):
             count += 1
             res.add((x - i, y + i))
             i += 1
@@ -81,8 +81,9 @@ class CheckRules():
 ##############################################################################################################
 
     @staticmethod
-    def _getCaptures(x, y, stone_list, player, opponent):
+    def getCaptures(x, y, game, player, opponent):
         res = set()
+        stone_list = game.stone_list
         if (x + 1, y) in stone_list[opponent] and (x + 2, y) in stone_list[opponent] and (x + 3, y) in stone_list[player]:
             res |= {(x + 1, y), (x + 2, y)}
         if (x - 1, y) in stone_list[opponent] and (x - 2, y) in stone_list[opponent] and (x - 3, y) in stone_list[player]:
@@ -102,12 +103,33 @@ class CheckRules():
         return res
 
     @staticmethod
-    def _getOpponentCaptures(x, y, stone_list, player, opponent, possible_moves, forbidden_move):
+    def wasCaptures(x, y, game, player, captures):
         res = set()
-        # all_stones = stone_list[player] | stone_list[opponent]
-        op_free_spots = possible_moves - forbidden_move[opponent]
+        stone_list = game.stone_list
+        if (x + 1, y) in captures and (x + 2, y) in captures and (x + 3, y) in stone_list[player]:
+            res |= {(x + 1, y), (x + 2, y)}
+        if (x - 1, y) in captures and (x - 2, y) in captures and (x - 3, y) in stone_list[player]:
+            res |= {(x - 1, y), (x - 2, y)}
+        if (x, y + 1) in captures and (x, y + 2) in captures and (x, y + 3) in stone_list[player]:
+            res |= {(x, y + 1), (x, y + 2)}
+        if (x, y - 1) in captures and (x, y - 2) in captures and (x, y - 3) in stone_list[player]:
+            res |= {(x, y - 1), (x, y - 2)}
+        if (x - 1, y - 1) in captures and (x - 2, y - 2) in captures and (x - 3, y - 3) in stone_list[player]:
+            res |= {(x - 1, y - 1), (x - 2, y - 2)}
+        if (x + 1, y + 1) in captures and (x + 2, y + 2) in captures and (x + 3, y + 3) in stone_list[player]:
+            res |= {(x + 1, y + 1), (x + 2, y + 2)}
+        if (x - 1, y + 1) in captures and (x - 2, y + 2) in captures and (x - 3, y + 3) in stone_list[player]:
+            res |= {(x - 1, y + 1), (x - 2, y + 2)}
+        if (x + 1, y - 1) in captures and (x + 2, y - 2) in captures and (x + 3, y - 3) in stone_list[player]:
+            res |= {(x + 1, y - 1), (x + 2, y - 2)}
+        return res
 
-        # print("debug", ((x + 1, y) in stone_list[opponent] and (x - 2, y) in op_free_spots), ((x - 2, y) in stone_list[opponent] and (x + 1) in op_free_spots), (x, y - 1) in stone_list[player])
+    @staticmethod
+    def getOpponentCaptures(x, y, game, player, opponent):
+        res = set()
+        op_free_spots = game.possible_moves - game.forbidden_move[opponent]
+        stone_list = game.stone_list
+
         if (
             (((x - 1, y) in stone_list[opponent] and (x + 2, y) in op_free_spots) or 
             ((x + 2, y) in stone_list[opponent] and (x - 1, y) in op_free_spots))
@@ -153,265 +175,265 @@ class CheckRules():
 ##############################################################################################################
 
     @staticmethod
-    def _hasVerticalFreeThree(x, y, stone_list, player, possible_moves):
+    def hasVerticalFreeThree(x, y, game, player):
         ######################### Pattern X000X
-        if ((x, y + 1) in stone_list[player]
-            and (x, y + 2) in stone_list[player]
-            and (x, y + 3) in possible_moves
-            and (x, y - 1) in possible_moves):
+        if ((x, y + 1) in game.stone_list[player]
+            and (x, y + 2) in game.stone_list[player]
+            and (x, y + 3) in game.possible_moves
+            and (x, y - 1) in game.possible_moves):
             return True
 
-        if ((x, y - 1) in stone_list[player]
-            and (x, y - 2) in stone_list[player]
-            and (x, y - 3) in possible_moves
-            and (x, y + 1) in possible_moves):
+        if ((x, y - 1) in game.stone_list[player]
+            and (x, y - 2) in game.stone_list[player]
+            and (x, y - 3) in game.possible_moves
+            and (x, y + 1) in game.possible_moves):
             return True
 
-        if ((x, y - 1) in stone_list[player]
-            and (x, y + 1) in stone_list[player]
-            and (x, y + 2) in possible_moves
-            and (x, y - 2) in possible_moves):
+        if ((x, y - 1) in game.stone_list[player]
+            and (x, y + 1) in game.stone_list[player]
+            and (x, y + 2) in game.possible_moves
+            and (x, y - 2) in game.possible_moves):
             return True                   
 
         ######################## Pattern X00X0X
-        if ((x, y - 1) in stone_list[player]
-            and (x, y - 3) in stone_list[player]
-            and (x, y - 2) in possible_moves
-            and (x, y - 4) in possible_moves
-            and (x, y + 1) in possible_moves):
+        if ((x, y - 1) in game.stone_list[player]
+            and (x, y - 3) in game.stone_list[player]
+            and (x, y - 2) in game.possible_moves
+            and (x, y - 4) in game.possible_moves
+            and (x, y + 1) in game.possible_moves):
             return True
 
-        if ((x, y + 1) in stone_list[player]
-            and (x, y - 2) in stone_list[player]
-            and (x, y + 2) in possible_moves
-            and (x, y - 3) in possible_moves
-            and (x, y - 1) in possible_moves):
+        if ((x, y + 1) in game.stone_list[player]
+            and (x, y - 2) in game.stone_list[player]
+            and (x, y + 2) in game.possible_moves
+            and (x, y - 3) in game.possible_moves
+            and (x, y - 1) in game.possible_moves):
             return True
         
-        if ((x, y + 2) in stone_list[player]
-            and (x, y + 3) in stone_list[player]
-            and (x, y + 1) in possible_moves
-            and (x, y + 4) in possible_moves
-            and (x, y - 1) in possible_moves):
+        if ((x, y + 2) in game.stone_list[player]
+            and (x, y + 3) in game.stone_list[player]
+            and (x, y + 1) in game.possible_moves
+            and (x, y + 4) in game.possible_moves
+            and (x, y - 1) in game.possible_moves):
             return True
 
         ######################### Pattern X0X00X
-        if ((x, y + 1) in stone_list[player]
-            and (x, y + 3) in stone_list[player]
-            and (x, y + 2) in possible_moves
-            and (x, y + 4) in possible_moves
-            and (x, y - 1) in possible_moves):
+        if ((x, y + 1) in game.stone_list[player]
+            and (x, y + 3) in game.stone_list[player]
+            and (x, y + 2) in game.possible_moves
+            and (x, y + 4) in game.possible_moves
+            and (x, y - 1) in game.possible_moves):
             return True
 
-        if ((x, y - 1) in stone_list[player]
-            and (x, y + 2) in stone_list[player]
-            and (x, y + 1) in possible_moves
-            and (x, y - 2) in possible_moves
-            and (x, y + 3) in possible_moves):
+        if ((x, y - 1) in game.stone_list[player]
+            and (x, y + 2) in game.stone_list[player]
+            and (x, y + 1) in game.possible_moves
+            and (x, y - 2) in game.possible_moves
+            and (x, y + 3) in game.possible_moves):
             return True
 
-        if ((x, y - 2) in stone_list[player]
-            and (x, y - 3) in stone_list[player]
-            and (x, y + 1) in possible_moves
-            and (x, y - 1) in possible_moves
-            and (x, y - 4) in possible_moves):
+        if ((x, y - 2) in game.stone_list[player]
+            and (x, y - 3) in game.stone_list[player]
+            and (x, y + 1) in game.possible_moves
+            and (x, y - 1) in game.possible_moves
+            and (x, y - 4) in game.possible_moves):
             return True
         return False
 
     @staticmethod
-    def _hasHorizontalFreeThree(x, y, game, player):
+    def hasHorizontalFreeThree(x, y, game, player):
         ######################### Pattern X000X
-        if ((x + 1, y) in stone_list[player]
-            and (x + 2, y) in stone_list[player]
-            and (x + 2, y) in possible_moves
-            and (x - 1, y) in possible_moves):
+        if ((x + 1, y) in game.stone_list[player]
+            and (x + 2, y) in game.stone_list[player]
+            and (x + 2, y) in game.possible_moves
+            and (x - 1, y) in game.possible_moves):
             return True
 
-        if ((x - 1, y) in stone_list[player]
-            and (x - 2 , y) in stone_list[player]
-            and (x - 3, y) in possible_moves
-            and (x + 1, y) in possible_moves):
+        if ((x - 1, y) in game.stone_list[player]
+            and (x - 2 , y) in game.stone_list[player]
+            and (x - 3, y) in game.possible_moves
+            and (x + 1, y) in game.possible_moves):
             return True
 
-        if ((x - 1, y) in stone_list[player]
-            and (x + 1, y) in stone_list[player]
-            and (x + 2, y) in possible_moves
-            and (x - 2, y) in possible_moves):
+        if ((x - 1, y) in game.stone_list[player]
+            and (x + 1, y) in game.stone_list[player]
+            and (x + 2, y) in game.possible_moves
+            and (x - 2, y) in game.possible_moves):
             return True
 
         ######################## Pattern X00X0X
-        if ((x - 1, y) in stone_list[player]
-            and (x - 3, y) in stone_list[player]
-            and (x - 2, y) in possible_moves
-            and (x - 4, y) in possible_moves
-            and (x + 1, y) in possible_moves):
+        if ((x - 1, y) in game.stone_list[player]
+            and (x - 3, y) in game.stone_list[player]
+            and (x - 2, y) in game.possible_moves
+            and (x - 4, y) in game.possible_moves
+            and (x + 1, y) in game.possible_moves):
             return True
 
-        if ((x + 1, y) in stone_list[player]
-            and (x - 2, y) in stone_list[player]
-            and (x + 2, y) in possible_moves
-            and (x - 3, y) in possible_moves
-            and (x - 1, y) in possible_moves):
+        if ((x + 1, y) in game.stone_list[player]
+            and (x - 2, y) in game.stone_list[player]
+            and (x + 2, y) in game.possible_moves
+            and (x - 3, y) in game.possible_moves
+            and (x - 1, y) in game.possible_moves):
             return True
         
-        if ((x + 2, y) in stone_list[player]
-            and (x + 3, y) in stone_list[player]
-            and (x + 1, y) in possible_moves
-            and (x + 4, y) in possible_moves
-            and (x - 1, y) in possible_moves):
+        if ((x + 2, y) in game.stone_list[player]
+            and (x + 3, y) in game.stone_list[player]
+            and (x + 1, y) in game.possible_moves
+            and (x + 4, y) in game.possible_moves
+            and (x - 1, y) in game.possible_moves):
             return True
 
         ######################### Pattern X0X00X
-        if ((x + 1, y) in stone_list[player]
-            and (x + 3, y) in stone_list[player]
-            and (x + 2, y) in possible_moves
-            and (x + 4, y) in possible_moves
-            and (x - 1, y) in possible_moves):
+        if ((x + 1, y) in game.stone_list[player]
+            and (x + 3, y) in game.stone_list[player]
+            and (x + 2, y) in game.possible_moves
+            and (x + 4, y) in game.possible_moves
+            and (x - 1, y) in game.possible_moves):
             return True
 
-        if ((x - 1, y) in stone_list[player]
-            and (x + 2, y) in stone_list[player]
-            and (x + 1, y) in possible_moves
-            and (x - 2, y) in possible_moves
-            and (x + 3, y) in possible_moves):
+        if ((x - 1, y) in game.stone_list[player]
+            and (x + 2, y) in game.stone_list[player]
+            and (x + 1, y) in game.possible_moves
+            and (x - 2, y) in game.possible_moves
+            and (x + 3, y) in game.possible_moves):
             return True
 
-        if ((x - 2, y) in stone_list[player]
-            and (x - 3, y) in stone_list[player]
-            and (x + 1, y) in possible_moves
-            and (x - 1, y) in possible_moves
-            and (x - 4, y) in possible_moves):
+        if ((x - 2, y) in game.stone_list[player]
+            and (x - 3, y) in game.stone_list[player]
+            and (x + 1, y) in game.possible_moves
+            and (x - 1, y) in game.possible_moves
+            and (x - 4, y) in game.possible_moves):
             return True
         return False
 
     @staticmethod
-    def _hasLeftDiagonalFreeThree(x, y, stone_list, player, possible_moves):
+    def hasLeftDiagonalFreeThree(x, y, game, player):
         ######################### Pattern X000X
-        if ((x + 1, y + 1) in stone_list[player]
-            and (x + 2, y + 2) in stone_list[player]
-            and (x + 3, y + 3) in possible_moves
-            and (x - 1, y - 1) in possible_moves):
+        if ((x + 1, y + 1) in game.stone_list[player]
+            and (x + 2, y + 2) in game.stone_list[player]
+            and (x + 3, y + 3) in game.possible_moves
+            and (x - 1, y - 1) in game.possible_moves):
             return True
 
-        if ((x - 1, y - 1) in stone_list[player]
-            and (x - 2, y - 2) in stone_list[player]
-            and (x - 3, y - 3) in possible_moves
-            and (x + 1, y + 1) in possible_moves):
+        if ((x - 1, y - 1) in game.stone_list[player]
+            and (x - 2, y - 2) in game.stone_list[player]
+            and (x - 3, y - 3) in game.possible_moves
+            and (x + 1, y + 1) in game.possible_moves):
             return True
 
-        if ((x - 1, y - 1) in stone_list[player]
-            and (x + 1, y + 1) in stone_list[player]
-            and (x + 2, y + 2) in possible_moves
-            and (x - 2, y - 2) in possible_moves):
+        if ((x - 1, y - 1) in game.stone_list[player]
+            and (x + 1, y + 1) in game.stone_list[player]
+            and (x + 2, y + 2) in game.possible_moves
+            and (x - 2, y - 2) in game.possible_moves):
             return True
 
         ######################## Pattern X00X0X
-        if ((x - 1, y - 1) in stone_list[player]
-            and (x - 3, y - 3) in stone_list[player]
-            and (x - 2, y - 2) in possible_moves
-            and (x - 4, y - 4) in possible_moves
-            and (x + 1, y + 1) in possible_moves):
+        if ((x - 1, y - 1) in game.stone_list[player]
+            and (x - 3, y - 3) in game.stone_list[player]
+            and (x - 2, y - 2) in game.possible_moves
+            and (x - 4, y - 4) in game.possible_moves
+            and (x + 1, y + 1) in game.possible_moves):
             return True
 
-        if ((x + 1, y + 1) in stone_list[player]
-            and (x - 2, y - 2) in stone_list[player]
-            and (x + 2, y + 2) in possible_moves
-            and (x - 3, y - 3) in possible_moves
-            and (x - 1, y - 1) in possible_moves):
+        if ((x + 1, y + 1) in game.stone_list[player]
+            and (x - 2, y - 2) in game.stone_list[player]
+            and (x + 2, y + 2) in game.possible_moves
+            and (x - 3, y - 3) in game.possible_moves
+            and (x - 1, y - 1) in game.possible_moves):
             return True
         
-        if ((x + 2, y + 2) in stone_list[player]
-            and (x + 3, y + 3) in stone_list[player]
-            and (x + 1, y + 1) in possible_moves
-            and (x + 4, y + 4) in possible_moves
-            and (x - 1, y - 1) in possible_moves):
+        if ((x + 2, y + 2) in game.stone_list[player]
+            and (x + 3, y + 3) in game.stone_list[player]
+            and (x + 1, y + 1) in game.possible_moves
+            and (x + 4, y + 4) in game.possible_moves
+            and (x - 1, y - 1) in game.possible_moves):
             return True
 
         ######################### Pattern X0X00X
-        if ((x + 1, y + 1) in stone_list[player]
-            and (x + 3, y + 3) in stone_list[player]
-            and (x + 2, y + 2) in possible_moves
-            and (x + 4, y + 4) in possible_moves
-            and (x - 1, y - 1) in possible_moves):
+        if ((x + 1, y + 1) in game.stone_list[player]
+            and (x + 3, y + 3) in game.stone_list[player]
+            and (x + 2, y + 2) in game.possible_moves
+            and (x + 4, y + 4) in game.possible_moves
+            and (x - 1, y - 1) in game.possible_moves):
             return True
 
-        if ((x - 1, y - 1) in stone_list[player]
-            and (x + 2, y + 2) in stone_list[player]
-            and (x + 1, y + 1) in possible_moves
-            and (x - 2, y - 2) in possible_moves
-            and (x + 3, y + 3) in possible_moves):
+        if ((x - 1, y - 1) in game.stone_list[player]
+            and (x + 2, y + 2) in game.stone_list[player]
+            and (x + 1, y + 1) in game.possible_moves
+            and (x - 2, y - 2) in game.possible_moves
+            and (x + 3, y + 3) in game.possible_moves):
             return True
 
-        if ((x - 2, y - 2) in stone_list[player]
-            and (x - 3, y - 3) in stone_list[player]
-            and (x + 1, y + 1) in possible_moves
-            and (x - 1, y - 1) in possible_moves
-            and (x - 4, y - 4) in possible_moves):
+        if ((x - 2, y - 2) in game.stone_list[player]
+            and (x - 3, y - 3) in game.stone_list[player]
+            and (x + 1, y + 1) in game.possible_moves
+            and (x - 1, y - 1) in game.possible_moves
+            and (x - 4, y - 4) in game.possible_moves):
             return True
         return False
 
     @staticmethod
-    def _hasRightDiagonalFreeThree(x, y, stone_list, player, possible_moves):
+    def hasRightDiagonalFreeThree(x, y, game, player):
         ######################### Pattern X000X
-        if ((x - 1, y + 1) in stone_list[player]
-            and (x - 2, y + 2) in stone_list[player]
-            and (x - 3, y + 3) in possible_moves
-            and (x + 1, y - 1) in possible_moves):
+        if ((x - 1, y + 1) in game.stone_list[player]
+            and (x - 2, y + 2) in game.stone_list[player]
+            and (x - 3, y + 3) in game.possible_moves
+            and (x + 1, y - 1) in game.possible_moves):
             return True
 
-        if ((x + 1, y - 1) in stone_list[player]
-            and (x + 2, y - 2) in stone_list[player]
-            and (x + 3, y - 3) in possible_moves
-            and (x - 1, y + 1) in possible_moves):
+        if ((x + 1, y - 1) in game.stone_list[player]
+            and (x + 2, y - 2) in game.stone_list[player]
+            and (x + 3, y - 3) in game.possible_moves
+            and (x - 1, y + 1) in game.possible_moves):
             return True
 
-        if ((x + 1, y - 1) in stone_list[player]
-            and (x - 1, y + 1) in stone_list[player]
-            and (x - 2, y + 2) in possible_moves
-            and (x + 2, y - 2) in possible_moves):
+        if ((x + 1, y - 1) in game.stone_list[player]
+            and (x - 1, y + 1) in game.stone_list[player]
+            and (x - 2, y + 2) in game.possible_moves
+            and (x + 2, y - 2) in game.possible_moves):
             return True
 
         ######################## Pattern X00X0X
-        if ((x + 1, y - 1) in stone_list[player]
-            and (x + 3, y - 3) in stone_list[player]
-            and (x + 2, y - 2) in possible_moves
-            and (x + 4, y - 4) in possible_moves
-            and (x - 1, y + 1) in possible_moves):
+        if ((x + 1, y - 1) in game.stone_list[player]
+            and (x + 3, y - 3) in game.stone_list[player]
+            and (x + 2, y - 2) in game.possible_moves
+            and (x + 4, y - 4) in game.possible_moves
+            and (x - 1, y + 1) in game.possible_moves):
             return True
 
-        if ((x - 1, y + 1) in stone_list[player]
-            and (x + 2, y - 2) in stone_list[player]
-            and (x - 2, y + 2) in possible_moves
-            and (x + 3, y - 3) in possible_moves
-            and (x + 1, y - 1) in possible_moves):
+        if ((x - 1, y + 1) in game.stone_list[player]
+            and (x + 2, y - 2) in game.stone_list[player]
+            and (x - 2, y + 2) in game.possible_moves
+            and (x + 3, y - 3) in game.possible_moves
+            and (x + 1, y - 1) in game.possible_moves):
             return True
         
-        if ((x - 2, y + 2) in stone_list[player]
-            and (x - 3, y + 3) in stone_list[player]
-            and (x - 1, y + 1) in possible_moves
-            and (x - 4, y + 4) in possible_moves
-            and (x + 1, y - 1) in possible_moves):
+        if ((x - 2, y + 2) in game.stone_list[player]
+            and (x - 3, y + 3) in game.stone_list[player]
+            and (x - 1, y + 1) in game.possible_moves
+            and (x - 4, y + 4) in game.possible_moves
+            and (x + 1, y - 1) in game.possible_moves):
             return True
 
         ######################### Pattern X0X00X
-        if ((x - 1, y + 1) in stone_list[player]
-            and (x - 3, y + 3) in stone_list[player]
-            and (x - 2, y + 2) in possible_moves
-            and (x - 4, y + 4) in possible_moves
-            and (x + 1, y - 1) in possible_moves):
+        if ((x - 1, y + 1) in game.stone_list[player]
+            and (x - 3, y + 3) in game.stone_list[player]
+            and (x - 2, y + 2) in game.possible_moves
+            and (x - 4, y + 4) in game.possible_moves
+            and (x + 1, y - 1) in game.possible_moves):
             return True
 
-        if ((x + 1, y - 1) in stone_list[player]
-            and (x - 2, y + 2) in stone_list[player]
-            and (x - 1, y + 1) in possible_moves
-            and (x + 2, y - 2) in possible_moves
-            and (x - 3, y + 3) in possible_moves):
+        if ((x + 1, y - 1) in game.stone_list[player]
+            and (x - 2, y + 2) in game.stone_list[player]
+            and (x - 1, y + 1) in game.possible_moves
+            and (x + 2, y - 2) in game.possible_moves
+            and (x - 3, y + 3) in game.possible_moves):
             return True
 
-        if ((x + 2, y - 2) in stone_list[player]
-            and (x + 3, y - 3) in stone_list[player]
-            and (x - 1, y + 1) in possible_moves
-            and (x + 1, y - 1) in possible_moves
-            and (x + 4, y - 4) in possible_moves):
+        if ((x + 2, y - 2) in game.stone_list[player]
+            and (x + 3, y - 3) in game.stone_list[player]
+            and (x - 1, y + 1) in game.possible_moves
+            and (x + 1, y - 1) in game.possible_moves
+            and (x + 4, y - 4) in game.possible_moves):
             return True
         return False
