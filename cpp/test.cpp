@@ -1,30 +1,34 @@
-#include <set>
-#include <iostream>
-#include <map>
 
-typedef std::set<std::pair<int, int > > coordSet;
-typedef std::pair<int, int> coord;
-
-std::set<int> test_return_set(void)
-{
-	std::set<int> test { 1, 2, 3 };
-
-	return test;
-}
+# include "globals.hpp"
 
 int main()
 {
-	std::set<int> test = test_return_set();
-	std::set<int> test2 = test;
+	Game g = Game();
 
-	test2.erase(2);
+	std::cout << g.goban_size << std::endl;
+	/*
+	std::bitset<361> p1;
+	std::bitset<361> p2;
+	std::vector<int> v;
+	std::set<int> s;
 
-	for (std::set<int>::const_iterator it = test.begin();
-	it != test.end(); it++)
-		std::cout << *it << std::endl;
+	for (int i = 0; i < 361; i++)
+		v.push_back(i);
 
-	for (std::set<int>::const_iterator it = test2.begin();
-	it != test2.end(); it++)
-		std::cout << *it << std::endl; 
+ 	int x = 2, y = 1;
+	std::cout << sizeof(p1) << std::endl;
+	std::cout << sizeof(v) << std::endl;
+	std::cout << sizeof(s) << std::endl;
 
+	p1[y * 19 + x] = 1;
+	p2[y * 19 + 1] = 1;
+
+ 	
+	std::cout << (p2 | p1) << std::endl;
+	for (int i = 0; i < 361; i++) {
+		std::cout << p1[i] << "\t";
+		if ((i + 1) % 19 == 0)
+			std::cout << std::endl;
+	}
+	*/
 }

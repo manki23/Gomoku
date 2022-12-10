@@ -1,7 +1,7 @@
 # ifndef GAME_HPP
 # define GAME_HPP
 
-# include "global.hpp"
+# include "globals.hpp"
 
 # define EMPTY 0
 # define BLACK 1
@@ -37,24 +37,7 @@ class Game
 			this->reset();
         }
 
-        Game(Game const & g)
-		{
-			this->player = g.player;
-			this->opponnent = g.opponnent;
-			this->goban_size = g.goban_size;
-			this->possible_moves = g.possible_moves;
-			this->playable_area = g.playable_area;
-			this->player_captures = g.player_captures;
-			this->last_winning_move = g.last_winning_move;
-			this->game_over = g.game_over;
-			this->turn = g.turn;
-			this->stone_list = g.stone_list;
-			this->forbidden_moves = g.forbidden_moves;
-			this->stone_captured = g.stone_captured;
-			this->move_history = g.move_history;
-			this->playable_area_history = g.playable_area_history;
-		}
-
+        
         ~Game(void) { return; }
 
         void reset(void)
@@ -90,7 +73,7 @@ class Game
 			this->updateStoneAreaCoordinates(move);
 			this->updateForbiddenMoves();
 
-			coordSet captures = CheckRules::getCaptures(move, &this, this->player, this->opponnent);
+			coordSet captures = getCaptures(move, &this, this->player, this->opponnent);
 			this->stone_captured[this->player] = captures;
 			this->clearCaptures(captures);
 			this->player_captures[this->player] += captures.size();
@@ -117,7 +100,7 @@ class Game
 				this->last_winning_move[this->player] = coord(-1, -1);
 			// Restore captured stones
 			if (this->stone_captured[this->player]
-				&& CheckRules::wasCaptures(move, this, this->player,
+				&& wasCaptures(move, this, this->player,
 				this->opponnent, this->stone_captured[this->player].top()))
 				{
 					coordSet captures = this->stone_captured[this->player].top();
@@ -175,10 +158,10 @@ class Game
 
 		bool isCreatingDoubleThree(int x, int y, int player)
 		{
-			return (	CheckRules::hasHorizontalFreeThree(x, y, &this, player)
-					+ 	CheckRules::hasVerticalFreeThree(x, y, &this, player)
-					+	CheckRules::hasRightDiagonalFreeThree(x, y, &this, player)
-					+	CheckRules::hasLeftDiagonalFreeThree(x, y, &this, player));
+			return (	hasHorizontalFreeThree(x, y, &this, player)
+					+ 	hasVerticalFreeThree(x, y, &this, player)
+					+	hasRightDiagonalFreeThree(x, y, &this, player)
+					+	hasLeftDiagonalFreeThree(x, y, &this, player));
 		}
 
 		void clearCaptures(coordSet const & captures)
@@ -222,10 +205,10 @@ class Game
 		{
 			coordSet::const_iterator pos = this->stone_list[this->player].find(coord(x, y));
 			return (pos != this->stone_list[this->player].end()
-					&& CheckRules::hasColumn(x, y, &this)
-					&& CheckRules::hasLine(x, y, &this)
-					&& CheckRules::hasLeftDiagonal(x, y, &this)
-					&& CheckRules::hasRightDiagonal(x, y, &this));
+					&& hasColumn(x, y, &this)
+					&& hasLine(x, y, &this)
+					&& hasLeftDiagonal(x, y, &this)
+					&& hasRightDiagonal(x, y, &this));
 		}
 
 		bool letOpponentPlay(coordSet const & aligned, int x, int y)
@@ -236,7 +219,7 @@ class Game
 				int xx = it->first;
 				int yy = it->second;
 
-				if (CheckRules::getOpponenetCaptures(xx, yy, &this))
+				if (getOpponenetCaptures(xx, yy, &this))
 				{
 					if (this->last_winning_move[this->player] != coord(-1, -1))
 						return false;
@@ -252,7 +235,7 @@ class Game
 				coordSet::const_iterator pos = aligned.find(*it);
 				if (pos == aligned.end()
 				&& this->player_captures[this->opponnent] == 8
-				&& CheckRules::getOpponenetCaptures(xx, yy, &this))
+				&& getOpponenetCaptures(xx, yy, &this))
 					return true;
 
 			}
@@ -269,6 +252,6 @@ class Game
 			return this->game_over;
 		}
 
-}
+};
 
 # endif

@@ -3,8 +3,10 @@
 
 # include "globals.hpp"
 
+
 namespace CheckRules
 {
+
     bool checkCondition(int x, int y, Game const * g)
     {
         coordSet::const_iterator pos = g->stone_list[g->player].find(coord(x, y));
@@ -601,6 +603,6 @@ namespace CheckRules
             && inSet(coord(x + 4, y - 4), g->possible_moves))
             return true;
     }
-}
+};
 
 # endif

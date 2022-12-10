@@ -1,7 +1,7 @@
 # ifndef CHECKHEURISTIC_HPP
 # define CHECKHEURISTIC_HPP
 
-# include "global.hpp"
+# include "globals.hpp"
 
 namespace CheckHeuristic
 {
