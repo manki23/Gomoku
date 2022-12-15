@@ -11,52 +11,52 @@
 
 class Game
 {
-    public:
-        std::map<int, coordSet >		stone_list;
-        coordSet						possible_moves;
-        coordSet						playable_area;
-        std::map<int, coordSet >		forbidden_moves;
-        std::map<int, int >				player_captures;
-        std::map<int, coordStackSet >	stone_captured;
-        std::map<int, coord >			last_winning_move;
-        coordStack						move_history;
+	public:
+		std::map<int, coordSet >		stone_list;
+		coordSet						possible_moves;
+		coordSet						playable_area;
+		std::map<int, coordSet >		forbidden_moves;
+		std::map<int, int >				player_captures;
+		std::map<int, coordStackSet >	stone_captured;
+		std::map<int, coord >			last_winning_move;
+		coordStack						move_history;
 		std::map<int, coordSet >		playable_area_history;
 
 
-        int							player;
-        int							opponnent;
-        int							goban_size;
-        int							turn;
+		int								player;
+		int								opponent;
+		int								goban_size;
+		int								turn;
 
-        bool						game_over;
-    
+		bool							game_over;
+	
+		coord							best_move;
 
-        Game(int goban_size=19)
-        {
+		Game(int goban_size=19)
+		{
 			this->goban_size = goban_size;
 			this->reset();
-        }
+		}
 
-        
-        ~Game(void) { return; }
+		~Game(void) { return; }
 
-        void reset(void)
+		void reset(void)
 		{
 			this->player = BLACK;
-            this->opponnent = WHITE;
-            for (int i = 0; i < this->goban_size; i++)
-                for (int j = 0; j < this->goban_size; j++)
+			this->opponent = WHITE;
+			for (int i = 0; i < this->goban_size; i++)
+				for (int j = 0; j < this->goban_size; j++)
 					this->possible_moves.insert(coord(j, i));
-            int low = (this->goban_size / 2) - 1;
-            int high = (this->goban_size / 2) + 2;
-            for (int i = low; i < high; i++)
-                for (int j = low; j < high; j++)
+			int low = (this->goban_size / 2) - 1;
+			int high = (this->goban_size / 2) + 2;
+			for (int i = low; i < high; i++)
+				for (int j = low; j < high; j++)
 					this->playable_area.insert(coord(j, i));
-            this->player_captures[BLACK] = 0;
-            this->player_captures[WHITE] = 0;
-            this->last_winning_move[BLACK] = coord(-1, -1);
-            this->last_winning_move[WHITE] = coord(-1, -1);
-            this->game_over = false;
+			this->player_captures[BLACK] = 0;
+			this->player_captures[WHITE] = 0;
+			this->last_winning_move[BLACK] = coord(-1, -1);
+			this->last_winning_move[WHITE] = coord(-1, -1);
+			this->game_over = false;
 			this->turn = 0;
 		}
 
@@ -73,14 +73,14 @@ class Game
 			this->updateStoneAreaCoordinates(move);
 			this->updateForbiddenMoves();
 
-			coordSet captures = getCaptures(move, &this, this->player, this->opponnent);
-			this->stone_captured[this->player] = captures;
+			coordSet captures = getCaptures(xx, yy, this, this->player, this->opponent);
+			this->stone_captured[this->player].push(captures);
 			this->clearCaptures(captures);
 			this->player_captures[this->player] += captures.size();
 
 			this->game_over = this->checkGameOver(xx, yy);
-			this->opponnent = this->player;
-			this->player = (this->opponnent == WHITE ? BLACK : WHITE);
+			this->opponent = this->player;
+			this->player = (this->opponent == WHITE ? BLACK : WHITE);
 			this->checkForWin();
 			this->turn++;
 			// REMOVE last move no necessary
@@ -88,27 +88,42 @@ class Game
 			this->move_history.push(move);
 		}
 
+		void printPlayableArea(std::map<int, coordSet> m)
+		{
+			for (std::map<int, coordSet>::const_iterator it = m.begin();
+			it != m.end(); it++)
+			{
+				std::cout << "TURN : " << it->first << std::endl;
+				for (coordSet::const_iterator its = it->second.begin();
+				its != it->second.end(); its++)
+					std::cout << "(" << its->first << ", " << its->second << ") ";
+				std::cout << "\n\n";
+			}
+		}
+
 		void revertLastMove(void)
 		{
 			coord move;
 
-			this->opponnent = this->player;
-			this->player = (this->opponnent == WHITE ? BLACK : WHITE);
+			this->opponent = this->player;
+			this->player = (this->opponent == WHITE ? BLACK : WHITE);
 			move = this->move_history.top();
 			this->move_history.pop();
 			if (this->last_winning_move[this->player] == move)
 				this->last_winning_move[this->player] = coord(-1, -1);
 			// Restore captured stones
-			if (this->stone_captured[this->player]
-				&& wasCaptures(move, this, this->player,
-				this->opponnent, this->stone_captured[this->player].top()))
+			if (!this->stone_captured[this->player].empty()
+				&& !wasCaptures(move.first, move.second, this, this->player, this->stone_captured[this->player].top()).empty())
 				{
 					coordSet captures = this->stone_captured[this->player].top();
 					this->stone_captured[this->player].pop();
 					this->player_captures[this->player] -= captures.size();
 					this->restoreCaptures(captures);
 				}
-			this->playable_area.erase(this->playable_area_history[this->turn].begin(), this->playable_area_history[this->turn].end());
+			//printPlayableArea(this->playable_area_history);
+			for (coordSet::const_iterator it = this->playable_area_history[this->turn].begin(); it != this->playable_area_history[this->turn].end(); it++)
+				this->playable_area.erase(*it);
+			this->playable_area_history.erase(this->turn);
 			this->turn--;
 
 			this->playable_area.insert(move);
@@ -151,17 +166,17 @@ class Game
 					int y = it->second;
 					if (this->isCreatingDoubleThree(x, y, this->player))
 						this->forbidden_moves[this->player].insert(*it);
-					else if (this->isCreatingDoubleThree(x, y, this->opponnent))
-						this->forbidden_moves[this->opponnent].insert(*it);
+					else if (this->isCreatingDoubleThree(x, y, this->opponent))
+						this->forbidden_moves[this->opponent].insert(*it);
 				}
 		}
 
 		bool isCreatingDoubleThree(int x, int y, int player)
 		{
-			return (	hasHorizontalFreeThree(x, y, &this, player)
-					+ 	hasVerticalFreeThree(x, y, &this, player)
-					+	hasRightDiagonalFreeThree(x, y, &this, player)
-					+	hasLeftDiagonalFreeThree(x, y, &this, player));
+			return (	hasHorizontalFreeThree(x, y, this, player)
+					+ 	hasVerticalFreeThree(x, y, this, player)
+					+	hasRightDiagonalFreeThree(x, y, this, player)
+					+	hasLeftDiagonalFreeThree(x, y, this, player));
 		}
 
 		void clearCaptures(coordSet const & captures)
@@ -171,8 +186,8 @@ class Game
 			{
 				this->possible_moves.insert(*it);
 				this->playable_area.insert(*it);
-				this->stone_list[this->opponnent].erase(*it);
-				this->forbidden_moves[this->opponnent].erase(*it);
+				this->stone_list[this->opponent].erase(*it);
+				this->forbidden_moves[this->opponent].erase(*it);
 				this->forbidden_moves[this->player].erase(*it);
 			}
 		}
@@ -184,7 +199,7 @@ class Game
 			{
 				this->possible_moves.erase(*it);
 				this->playable_area.erase(*it);
-				this->stone_list[this->opponnent].insert(*it);
+				this->stone_list[this->opponent].insert(*it);
 			}
 		}
 
@@ -203,12 +218,23 @@ class Game
 
 		coordSet hasFiveAligned(int x, int y)
 		{
+			coordSet returnedSet;
 			coordSet::const_iterator pos = this->stone_list[this->player].find(coord(x, y));
-			return (pos != this->stone_list[this->player].end()
-					&& hasColumn(x, y, &this)
-					&& hasLine(x, y, &this)
-					&& hasLeftDiagonal(x, y, &this)
-					&& hasRightDiagonal(x, y, &this));
+			if (pos == this->stone_list[this->player].end())
+				return coordSet();
+			returnedSet = hasColumn(x, y, this);
+			if (!returnedSet.empty())
+				return returnedSet;
+			returnedSet = hasLine(x, y, this);
+			if (!returnedSet.empty())
+				return returnedSet;
+			returnedSet = hasLeftDiagonal(x, y, this);
+			if (!returnedSet.empty())
+				return returnedSet;
+			returnedSet = hasRightDiagonal(x, y, this);
+			if (!returnedSet.empty())
+				return returnedSet;
+			return coordSet();
 		}
 
 		bool letOpponentPlay(coordSet const & aligned, int x, int y)
@@ -219,7 +245,7 @@ class Game
 				int xx = it->first;
 				int yy = it->second;
 
-				if (getOpponenetCaptures(xx, yy, &this))
+				if (getOpponenetCaptures(xx, yy, this))
 				{
 					if (this->last_winning_move[this->player] != coord(-1, -1))
 						return false;
@@ -234,8 +260,8 @@ class Game
 				int yy = it->second;
 				coordSet::const_iterator pos = aligned.find(*it);
 				if (pos == aligned.end()
-				&& this->player_captures[this->opponnent] == 8
-				&& getOpponenetCaptures(xx, yy, &this))
+				&& this->player_captures[this->opponent] == 8
+				&& getOpponenetCaptures(xx, yy, this))
 					return true;
 
 			}

@@ -1,50 +1,40 @@
 # ifndef GLOBALS_HPP
 # define GLOBALS_HPP
 
-# include <set>
-# include <map>
-# include <unordered_set>
-# include <unordered_map>
-# include <stack>
-# include <iostream>
-# include <bitset>
-# include <vector>
+# include "Types.hpp"
 
-
-
-typedef typename std::pair<int, int >			    coord;
-typedef typename std::set< coord >		coordSet;
-typedef typename std::bitset<361 >                  bset;
-typedef typename std::stack< coord >				coordStack;
-typedef typename std::stack< coordSet >			    coordStackSet;
-# include "Game.hpp"
-
-// class Game;
+class Game;
 
 // CheckRules
-coordSet wasCaptures(int x, int y, Game const * g, int player, coordSet const & captures);
-coordSet getCaptures(int x, int y, Game const * g, int player, int opponnent);
-coordSet hasLine(int x, int y, Game const * g);
-coordSet hasColumn(int x, int y, Game const * g);
-coordSet hasLeftDiagonal(int x, int y, Game const * g);
-coordSet hasRightDiagonal(int x, int y, Game const * g);
+coordSet wasCaptures(int x, int y, Game * g, int player, coordSet const & captures);
+coordSet getCaptures(int x, int y, Game * g, int player, int opponnent);
+coordSet hasLine(int x, int y, Game * g);
+coordSet hasColumn(int x, int y, Game * g);
+coordSet hasLeftDiagonal(int x, int y, Game * g);
+coordSet hasRightDiagonal(int x, int y, Game * g);
 
-bool checkCondition(int x, int y, Game const * g);
+bool checkCondition(int x, int y, Game * g);
 bool inSubSet(coord const c, coordSet const first, coordSet const second);
 bool inSet(coord const c, coordSet const s);
-bool getOpponenetCaptures(int x, int y, Game const * g);
-bool hasVerticalFreeThree(int x, int y, Game const * g, int player);
-bool hasVerticalFreeThree(int x, int y, Game const * g, int player);
-bool hasLeftDiagonalFreeThree(int x, int y, Game const * g, int player);
-bool hasRightDiagonalFreeThree(int x, int y, Game const * g, int player);
+bool getOpponenetCaptures(int x, int y, Game * g);
+bool hasVerticalFreeThree(int x, int y, Game * g, int player);
+bool hasHorizontalFreeThree(int x, int y, Game * g, int player);
+bool hasLeftDiagonalFreeThree(int x, int y, Game * g, int player);
+bool hasRightDiagonalFreeThree(int x, int y, Game * g, int player);
 
 // CheckHeuristic
 bool isOutsideBoard(int x, int y, int size, coordSet const & forbidden_moves);
 std::map<std::string, int > countPatterns(std::vector<std::string> const & patterns);
-std::map<std::string, int > getPatternDict(Game const * g, int player, int opponent);
+std::map<std::string, int > getPatternDict(Game * g, int player, int opponent);
 
-//
+// Bot
+coord getNextMove(Game * g);
 
+// Heuristic
+std::map<std::string, int > getPatternDict(Game * g, int player, int opponent);
+std::map<std::string, int > countPatterns(std::vector<std::string> const & patterns);
+bool isOutsideBoard(int x, int y, int size, coordSet const & forbidden_moves);
 
-
+bool inSet(coord const c, coordSet const s);
+bool inSetPattern(std::string pattern, std::unordered_set<std::string> s);
 # endif
