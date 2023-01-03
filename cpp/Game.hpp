@@ -12,15 +12,17 @@
 class Game
 {
 	public:
-		std::map<int, coordSet >		stone_list;
+		mapCoordSet		stone_list;
 		coordSet						possible_moves;
 		coordSet						playable_area;
-		std::map<int, coordSet >		forbidden_moves;
+		mapCoordSet		forbidden_moves;
 		std::map<int, int >				player_captures;
 		std::map<int, coordStackSet >	stone_captured;
 		std::map<int, coord >			last_winning_move;
 		coordStack						move_history;
-		std::map<int, coordSet >		playable_area_history;
+		mapCoordSet		playable_area_history;
+
+		std::map<std::string, int > transposition_table;
 
 
 		int								player;
@@ -88,9 +90,10 @@ class Game
 			this->move_history.push(move);
 		}
 
-		void printPlayableArea(std::map<int, coordSet> m)
+		// DEBUG
+		void printPlayableAreaHist(mapCoordSet m)
 		{
-			for (std::map<int, coordSet>::const_iterator it = m.begin();
+			for (mapCoordSet::const_iterator it = m.begin();
 			it != m.end(); it++)
 			{
 				std::cout << "TURN : " << it->first << std::endl;
@@ -99,6 +102,18 @@ class Game
 					std::cout << "(" << its->first << ", " << its->second << ") ";
 				std::cout << "\n\n";
 			}
+		}
+
+		// DEBUG
+		void printPlayableArea(coordSet playableArea)
+		{
+			std::cout << "PLAYABLE AREA : " << std::endl;
+			for (coordSet::const_iterator it = playableArea.begin();
+			it != playableArea.end(); it++)
+			{
+				std::cout << "(" << it->first << ", " << it->second << ") ";
+			}
+			std::cout << "\n\n";
 		}
 
 		void revertLastMove(void)
@@ -121,9 +136,12 @@ class Game
 					this->restoreCaptures(captures);
 				}
 			//printPlayableArea(this->playable_area_history);
+			//printPlayableArea(this->playable_area);
 			for (coordSet::const_iterator it = this->playable_area_history[this->turn].begin(); it != this->playable_area_history[this->turn].end(); it++)
-				this->playable_area.erase(*it);
-			this->playable_area_history.erase(this->turn);
+				this->playable_area.erase(coord(it->first, it->second));
+			this->playable_area.clear();
+			//printPlayableArea(this->playable_area);
+			this->playable_area_history[this->turn].clear();
 			this->turn--;
 
 			this->playable_area.insert(move);
@@ -144,14 +162,12 @@ class Game
 					tmp.first += i;
 					tmp.second += j;
 					coordSet::const_iterator pos_possible_moves = this->possible_moves.find(tmp);
-					if (pos_possible_moves != this->possible_moves.end())
+					coordSet::const_iterator pos_forbidden = this->forbidden_moves[this->player].find(tmp);
+					if (pos_possible_moves != this->possible_moves.end()
+					&& pos_forbidden == this->forbidden_moves[this->player].end())
 					{
-						coordSet::const_iterator pos_playable_area = this->playable_area.find(tmp);
-						if (pos_playable_area == this->playable_area.end())
-						{
-							this->playable_area.insert(tmp);
-							this->playable_area_history[this->turn].insert(tmp);
-						}
+						this->playable_area.insert(tmp);
+						this->playable_area_history[this->turn].insert(tmp);
 					}
 				}
 		}

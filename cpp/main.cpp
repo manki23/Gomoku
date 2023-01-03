@@ -1,9 +1,9 @@
 # include "globals.hpp"
 # include "Game.hpp"
 
-void printStoneList(std::map<int, coordSet> m)
+void printStoneList(mapCoordSet m)
 {
-	for (std::map<int, coordSet>::const_iterator it = m.begin();
+	for (mapCoordSet::const_iterator it = m.begin();
 	it != m.end(); it++)
 	{
 		std::cout << "PLAYER : " << it->first << std::endl;
