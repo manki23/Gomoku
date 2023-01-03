@@ -29,7 +29,7 @@ void resetPlayers(Game * g)
 	g->opponent = 2;
 }
 
-int main()
+int main_comment()
 {
 	Game * g = new Game();
 

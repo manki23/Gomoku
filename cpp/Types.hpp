@@ -26,8 +26,12 @@ typedef typename std::pair<int, int >			    coord;
 typedef typename std::unordered_set<coord, pairhash>	    coordSet;
 //typedef typename std::set<coord>	    coordSet;
 typedef typename std::unordered_map<int, coordSet >			mapCoordSet;
-typedef typename std::bitset<361 >                  bset;
 typedef typename std::stack< coord >				coordStack;
 typedef typename std::stack< coordSet >			    coordStackSet;
+
+typedef typename std::bitset<361 >                    bset;
+typedef typename std::unordered_map<int, bset >			  mapBset;
+typedef typename std::stack< bset >				            bsetStack;
+typedef typename std::unordered_map<int, bsetStack >  mapBsetStack;
 
 # endif

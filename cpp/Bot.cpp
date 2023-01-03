@@ -1,5 +1,6 @@
 # include "globals.hpp"
 # include "Game.hpp"
+# include <limits.h>
 
 # include <chrono>
 

@@ -12,15 +12,26 @@
 class Game
 {
 	public:
-		mapCoordSet		stone_list;
-		coordSet						possible_moves;
-		coordSet						playable_area;
-		mapCoordSet		forbidden_moves;
-		std::map<int, int >				player_captures;
-		std::map<int, coordStackSet >	stone_captured;
-		std::map<int, coord >			last_winning_move;
-		coordStack						move_history;
-		mapCoordSet		playable_area_history;
+		// mapCoordSet		stone_list;
+		// coordSet						possible_moves;
+		// coordSet						playable_area;
+		// mapCoordSet		forbidden_moves;
+		// std::map<int, int >				player_captures;
+		// std::map<int, coordStackSet >	stones_captured;
+		// std::map<int, coord >			last_winning_move;
+		// coordStack						move_history;
+		// mapCoordSet		playable_area_history;
+
+		mapBset					stone_list;
+		bset					possible_moves;
+		bset					playable_area;
+		bset					forbidden_moves;
+		std::map<int, int >		player_captures;
+		mapBsetStack			stones_captured;
+		mapBsetStack			last_winning_move;
+		bsetStack				move_history;
+		mapBsetStack			playable_area_history;
+
 
 		std::map<std::string, int > transposition_table;
 
@@ -42,41 +53,79 @@ class Game
 
 		~Game(void) { return; }
 
+		int	getBsetIndex(x, y)
+		{
+			return x + (y * this->goban_size);
+		}
+
+		void printBset(s)
+		{
+			for (int i = 0; i < s.size(); i++) {
+				if (i != 0 && i % 19 == 0) {
+					std::cout << std::endl;
+				}
+				std::cout << "\t" << s[i];
+			}
+			std::cout << std::endl;
+			std::cout << "================================================" << std::endl;
+		}
+
 		void reset(void)
 		{
 			this->player = BLACK;
 			this->opponent = WHITE;
-			for (int i = 0; i < this->goban_size; i++)
-				for (int j = 0; j < this->goban_size; j++)
-					this->possible_moves.insert(coord(j, i));
+			// stone_list
+			this->stone_list[WHITE].reset();
+			this->stone_list[BLACK].reset();
+			// Reset possible moves
+			this->possible_moves.set();
+			// for (int i = 0; i < this->goban_size; i++)
+			// 	for (int j = 0; j < this->goban_size; j++)
+			// 		this->possible_moves.set(j, i);
+			// Reset playable area
 			int low = (this->goban_size / 2) - 1;
 			int high = (this->goban_size / 2) + 2;
+			this->playable_area.reset();
 			for (int i = low; i < high; i++)
 				for (int j = low; j < high; j++)
-					this->playable_area.insert(coord(j, i));
+					this->playable_area.set(j, i);
+			// forbidden_moves
+			this->forbidden_moves.reset();
+			// player_captures
 			this->player_captures[BLACK] = 0;
 			this->player_captures[WHITE] = 0;
+			// stones_captured (mapBsetStack)
+			// empty the stack using swap =>   std::stack<int>().swap(s);
+			bsetStack().swap(this->stones_captured[BLACK]);
+			bsetStack().swap(this->stones_captured[WHITE]);
+			// playable_area_history
+			bsetStack().swap(this->playable_area_history[BLACK]);
+			bsetStack().swap(this->playable_area_history[WHITE]);
+			
 			this->last_winning_move[BLACK] = coord(-1, -1);
 			this->last_winning_move[WHITE] = coord(-1, -1);
 			this->game_over = false;
 			this->turn = 0;
+
 		}
 
 		void playOneMove(int xx, int yy)
 		{
 			coord	move = coord(xx, yy);
+			int		index = this->getBsetIndex(xx, yy);
 
-			this->stone_list[this->player].insert(move);
-			this->possible_moves.erase(move);
-			coordSet::const_iterator pos = this->playable_area.find(move);
-			if (pos != this->playable_area.end())
-				this->playable_area.erase(move);
+			this->stone_list[this->player].set(index);
+			this->possible_moves.reset(index);
+			// coordSet::const_iterator pos = this->playable_area.find(move);
+			// if (pos != this->playable_area.end())
+			// 	this->playable_area.erase(move);
+			this->playable_area.reset(index);
 			
 			this->updateStoneAreaCoordinates(move);
 			this->updateForbiddenMoves();
 
 			coordSet captures = getCaptures(xx, yy, this, this->player, this->opponent);
-			this->stone_captured[this->player].push(captures);
+			this->stones_captured[this->player].push(captures);
 			this->clearCaptures(captures);
 			this->player_captures[this->player] += captures.size();
 
@@ -127,11 +176,11 @@ class Game
 			if (this->last_winning_move[this->player] == move)
 				this->last_winning_move[this->player] = coord(-1, -1);
 			// Restore captured stones
-			if (!this->stone_captured[this->player].empty()
-				&& !wasCaptures(move.first, move.second, this, this->player, this->stone_captured[this->player].top()).empty())
+			if (!this->stones_captured[this->player].empty()
+				&& !wasCaptures(move.first, move.second, this, this->player, this->stones_captured[this->player].top()).empty())
 				{
-					coordSet captures = this->stone_captured[this->player].top();
-					this->stone_captured[this->player].pop();
+					coordSet captures = this->stones_captured[this->player].top();
+					this->stones_captured[this->player].pop();
 					this->player_captures[this->player] -= captures.size();
 					this->restoreCaptures(captures);
 				}
@@ -152,21 +201,22 @@ class Game
 			this->updateForbiddenMoves();
 		}
 
-		void updateStoneAreaCoordinates(const coord & move)
+		void updateStoneAreaCoordinates(int x, int y)
 		{
 			int width = 1;
 			for (int i = -width; i < width + 1; i++)
 				for (int j = -width; j < width + 1; j++)
 				{
-					coord tmp = move;
-					tmp.first += i;
-					tmp.second += j;
+					// coord tmp = move;
+					// tmp.first += i;
+					// tmp.second += j;
+					int tmp_index = this->getBsetIndex(x + i, y + j);
 					coordSet::const_iterator pos_possible_moves = this->possible_moves.find(tmp);
 					coordSet::const_iterator pos_forbidden = this->forbidden_moves[this->player].find(tmp);
 					if (pos_possible_moves != this->possible_moves.end()
 					&& pos_forbidden == this->forbidden_moves[this->player].end())
 					{
-						this->playable_area.insert(tmp);
+						this->playable_area.set(tmp_index);
 						this->playable_area_history[this->turn].insert(tmp);
 					}
 				}
