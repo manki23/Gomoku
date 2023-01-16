@@ -122,7 +122,7 @@ coordSet getCaptures(int x, int y, Game * g, int player, int opponnent)
         result.insert(coord(x + 1, y));
         result.insert(coord(x + 2, y));
     }
-    if (g->stone_list[opponnent].find(coord(x -1, y)) != oppEnd
+    if (g->stone_list[opponnent].find(coord(x - 1, y)) != oppEnd
         && g->stone_list[opponnent].find(coord(x - 2, y)) != oppEnd
         && g->stone_list[player].find(coord(x - 3, y)) != pEnd)
     {
@@ -174,6 +174,8 @@ coordSet getCaptures(int x, int y, Game * g, int player, int opponnent)
         result.insert(coord(x + 1, y - 1));
         result.insert(coord(x + 2, y - 2));
     }
+    if (!result.empty())
+        std::cout << "Dans get Captures : " << x << " " << y << std::endl;
     return result;
 }
 
@@ -190,7 +192,7 @@ coordSet wasCaptures(int x, int y, Game * g, int player, coordSet const & captur
         result.insert(coord(x + 1, y));
         result.insert(coord(x + 2, y));
     }
-    if (captures.find(coord(x -1, y)) != capEnd
+    if (captures.find(coord(x - 1, y)) != capEnd
         && captures.find(coord(x - 2, y)) != capEnd
         && g->stone_list[player].find(coord(x - 3, y)) != stoneEnd)
     {
@@ -242,6 +244,14 @@ coordSet wasCaptures(int x, int y, Game * g, int player, coordSet const & captur
         result.insert(coord(x + 1, y - 1));
         result.insert(coord(x + 2, y - 2));
     }
+
+    std::cout << "[ ";
+    for (coordSet::const_iterator it = captures.begin(); it != capEnd; it++)
+        std::cout << it->first << " " << it->second << " ";
+    std::cout << "]" <<std::endl;
+
+    if (!result.empty())
+        std::cout << "Les coord de la pierre qui a fait la capture : " <<  x << " " << y << std::endl;
     return result;
 }
 

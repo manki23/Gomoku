@@ -93,8 +93,8 @@ class Game():
             captures = self.stones_captured[self.player].pop()
             self.player_captures[self.player] -= len(captures)
             self._restoreCaptures(captures)
-        self.playable_area -= self.playable_area_history[self.turn]
-        print("payable area len", len(self.playable_area))
+        #self.playable_area -= self.playable_area_history[self.turn]
+        self.playable_area = set()
         self.playable_area_history[self.turn] = set()
         self.turn -= 1
 

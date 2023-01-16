@@ -76,8 +76,8 @@ class Bot():
                 bot_game.playOneMove(*move)
 
                 score = minimax(bot_game, depth - 1, alpha, beta, not maximizingPlayer)
-                if maximizingPlayer:
-                    score = -score 
+                #if maximizingPlayer:
+                #    score = -score 
 
 
                 # REMOVE LAST MOVE
@@ -95,16 +95,16 @@ class Bot():
 
             return alpha if maximizingPlayer else beta
 
-        game_copy = game
+        game_copy = deepcopy(game)
         for move in game_copy.playable_area.copy():
 
             #  PLAY ONE MOVE
             game_copy.playOneMove(*move)
-            print("iter", Bot.getBoardEval(game_copy))
+            #print("iter", Bot.getBoardEval(game_copy))
             # input()
 
-            score = minimax(game_copy, 2, alpha, beta, False)
-            print(move, score)
+            score = minimax(game_copy, 3, alpha, beta, False)
+            #print(move, score)
             # input(">>")
             debug_arr[move[1]][move[0]] = f'{score}'
 

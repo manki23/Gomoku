@@ -12,15 +12,14 @@
 class Game
 {
 	public:
-		mapCoordSet		stone_list;
-		coordSet						possible_moves;
+		int			 					board[19][19];
+		mapCoordSet						forbidden_moves;
 		coordSet						playable_area;
-		mapCoordSet		forbidden_moves;
 		std::map<int, int >				player_captures;
 		std::map<int, coordStackSet >	stone_captured;
 		std::map<int, coord >			last_winning_move;
 		coordStack						move_history;
-		mapCoordSet		playable_area_history;
+		mapCoordSet						playable_area_history;
 
 		std::map<std::string, int > transposition_table;
 
@@ -48,7 +47,7 @@ class Game
 			this->opponent = WHITE;
 			for (int i = 0; i < this->goban_size; i++)
 				for (int j = 0; j < this->goban_size; j++)
-					this->possible_moves.insert(coord(j, i));
+					board[i][j] = EMPTY;
 			int low = (this->goban_size / 2) - 1;
 			int high = (this->goban_size / 2) + 2;
 			for (int i = low; i < high; i++)
@@ -66,13 +65,9 @@ class Game
 		{
 			coord	move = coord(xx, yy);
 
-			this->stone_list[this->player].insert(move);
-			this->possible_moves.erase(move);
-			coordSet::const_iterator pos = this->playable_area.find(move);
-			if (pos != this->playable_area.end())
-				this->playable_area.erase(move);
+			this->board[yy][xx] = this->player;
 			
-			this->updateStoneAreaCoordinates(move);
+			this->updateStoneAreaCoordinates(coord(xx, yy));
 			this->updateForbiddenMoves();
 
 			coordSet captures = getCaptures(xx, yy, this, this->player, this->opponent);
@@ -85,8 +80,6 @@ class Game
 			this->player = (this->opponent == WHITE ? BLACK : WHITE);
 			this->checkForWin();
 			this->turn++;
-			// REMOVE last move no necessary
-			//this->last_move = move;
 			this->move_history.push(move);
 		}
 
@@ -127,8 +120,6 @@ class Game
 			if (this->last_winning_move[this->player] == move)
 				this->last_winning_move[this->player] = coord(-1, -1);
 			// Restore captured stones
-			std::cout << "Stone Captured : " << this->stone_captured[this->player].empty() << " " << move.first << " " << move.second << std::endl; 
-
 			if (!this->stone_captured[this->player].empty()
 				&& !wasCaptures(move.first, move.second, this, this->player, this->stone_captured[this->player].top()).empty())
 				{
@@ -137,19 +128,17 @@ class Game
 					this->player_captures[this->player] -= captures.size();
 					this->restoreCaptures(captures);
 				}
-			//printPlayableArea(this->playable_area_history);
-			//printPlayableArea(this->playable_area);
+
+			
 			for (coordSet::const_iterator it = this->playable_area_history[this->turn].begin(); it != this->playable_area_history[this->turn].end(); it++)
 				this->playable_area.erase(coord(it->first, it->second));
 			this->playable_area.clear();
-			//printPlayableArea(this->playable_area);
+			
 			this->playable_area_history[this->turn].clear();
 			this->turn--;
 
 			this->playable_area.insert(move);
-			this->possible_moves.insert(move);
-
-			this->stone_list[this->player].erase(move);
+			this->board[move.second][move.first] = 0;
 
 			this->updateForbiddenMoves();
 		}
@@ -163,9 +152,8 @@ class Game
 					coord tmp = move;
 					tmp.first += i;
 					tmp.second += j;
-					coordSet::const_iterator pos_possible_moves = this->possible_moves.find(tmp);
 					coordSet::const_iterator pos_forbidden = this->forbidden_moves[this->player].find(tmp);
-					if (pos_possible_moves != this->possible_moves.end()
+					if (this->board[tmp.second][tmp.first] == 0
 					&& pos_forbidden == this->forbidden_moves[this->player].end())
 					{
 						this->playable_area.insert(tmp);
@@ -177,16 +165,19 @@ class Game
 		void updateForbiddenMoves(void)
 		{
 			this->forbidden_moves.clear();
-			for (coordSet::const_iterator it = this->possible_moves.begin();
-				it != this->possible_moves.end(); it++)
+			for (int y = 0; y < this->goban_size; y++)
+			{
+				for (int x = 0; x < this->goban_size; x++)
 				{
-					int x = it->first;
-					int y = it->second;
-					if (this->isCreatingDoubleThree(x, y, this->player))
-						this->forbidden_moves[this->player].insert(*it);
-					else if (this->isCreatingDoubleThree(x, y, this->opponent))
-						this->forbidden_moves[this->opponent].insert(*it);
+					if (!this->board[y][x])
+					{
+						if (this->isCreatingDoubleThree(x, y, this->player))
+							this->forbidden_moves[this->player].insert(coord(x, y));
+						else if (this->isCreatingDoubleThree(x, y, this->opponent))
+							this->forbidden_moves[this->opponent].insert(coord(x, y));
+					}
 				}
+			}
 		}
 
 		bool isCreatingDoubleThree(int x, int y, int player)
@@ -202,9 +193,8 @@ class Game
 			for (coordSet::const_iterator it = captures.begin();
 				it != captures.end(); it++)
 			{
-				this->possible_moves.insert(*it);
+				this->board[it->second][it->first] = 0;
 				this->playable_area.insert(*it);
-				this->stone_list[this->opponent].erase(*it);
 				this->forbidden_moves[this->opponent].erase(*it);
 				this->forbidden_moves[this->player].erase(*it);
 			}
@@ -212,13 +202,11 @@ class Game
 
 		void restoreCaptures(coordSet const & captures)
 		{
-			std::cout << "Je passe dans restoreCaptures" << std::endl;
 			for (coordSet::const_iterator it = captures.begin();
 				it != captures.end(); it++)
 			{
-				this->possible_moves.erase(*it);
+				this->board[it->second][it->first] = this->opponent;
 				this->playable_area.erase(*it);
-				this->stone_list[this->opponent].insert(*it);
 			}
 		}
 
@@ -238,8 +226,7 @@ class Game
 		coordSet hasFiveAligned(int x, int y)
 		{
 			coordSet returnedSet;
-			coordSet::const_iterator pos = this->stone_list[this->player].find(coord(x, y));
-			if (pos == this->stone_list[this->player].end())
+			if (this->board[y][x] == EMPTY)
 				return coordSet();
 			returnedSet = hasColumn(x, y, this);
 			if (!returnedSet.empty())
@@ -258,11 +245,13 @@ class Game
 
 		bool letOpponentPlay(coordSet const & aligned, int x, int y)
 		{
+			int xx;
+			int yy;
 			for (coordSet::const_iterator it = aligned.begin();
 				it != aligned.end(); it++)
 			{
-				int xx = it->first;
-				int yy = it->second;
+				xx = it->first;
+				yy = it->second;
 
 				if (getOpponenetCaptures(xx, yy, this))
 				{
@@ -272,17 +261,16 @@ class Game
 					return true;
 				}
 			}
-			for (coordSet::const_iterator it = this->stone_list[this->player].begin();
-				it != this->stone_list[this->player].end(); it++)
+			for (yy = 0; y < this->goban_size; y++)
 			{
-				int xx = it->first;
-				int yy = it->second;
-				coordSet::const_iterator pos = aligned.find(*it);
-				if (pos == aligned.end()
-				&& this->player_captures[this->opponent] == 8
-				&& getOpponenetCaptures(xx, yy, this))
-					return true;
-
+				for (xx = 0; x < this->goban_size; x++)
+				{
+					coordSet::const_iterator pos = aligned.find(coord(xx, yy));
+					if (pos == aligned.end()
+					&& this->player_captures[this->opponent] == 8
+					&& getOpponenetCaptures(xx, yy, this))
+						return true;
+				}
 			}
 			return false;
 		}

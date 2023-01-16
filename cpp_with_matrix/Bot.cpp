@@ -8,29 +8,29 @@ typedef std::vector<std::vector<std::string > > debugArray;
 
 # define DEBUG false
 
-int getBoardEval(Game * g)
+int getBoardEval(Game ** g)
 {
     /*
     std::ostringstream ss;
-    for (std::map<int, coordSet>::const_iterator it = g->stone_list.begin();
-    it != g->stone_list.end(); it++)
+    for (std::map<int, coordSet>::const_iterator it = (*g)->stone_list.begin();
+    it != (*g)->stone_list.end(); it++)
     {
         for (coordSet::const_iterator its = it->second.begin();
         its != it->second.end(); its++)
             ss << std::to_string(it->first) << std::to_string(its->first) << std::to_string(its->second);
     }
 
-    std::map<std::string, int>::const_iterator pos = g->transposition_table.find(ss.str());
-    if (pos != g->transposition_table.end())
+    std::map<std::string, int>::const_iterator pos = (*g)->transposition_table.find(ss.str());
+    if (pos != (*g)->transposition_table.end())
         return (pos->second);
 
     std::cout << ss.str() << std::endl;
     */
-	mapEval player = getPatternDict(g, g->player, g->opponent);
-	mapEval opponent = getPatternDict(g, g->opponent, g->player);
+	mapEval player = getPatternDict(*g, (*g)->player, (*g)->opponent);
+	mapEval opponent = getPatternDict(*g, (*g)->opponent, (*g)->player);
 
 	int score = (600000 * (player["fiveInRow"] - opponent["fiveInRow"]) +
-				7000 * (player["liveFour"] - opponent["liveFour"]) +
+				10000 * (player["liveFour"] - opponent["liveFour"]) +
 				2100 * (player["deadFour"] - opponent["deadFour"]) +
 				2000 * (player["liveThree"] - opponent["liveThree"]) +
 				700 * (player["deadThree"] - opponent["deadThree"]) +
@@ -40,7 +40,7 @@ int getBoardEval(Game * g)
 				1000 * (player["captures"] - opponent["captures"])
 			);
 
-    //g->transposition_table[ss.str()] = score;
+    //(*g)->transposition_table[ss.str()] = score;
 	return score;
 }
 
@@ -49,7 +49,7 @@ int minimax(Game ** g, int depth, int alpha, int beta, bool maximizingPlayer, in
     *count += 1;
 	if (depth == 0 || (*g)->game_over)
 	{
-		int boardEval = getBoardEval(*g);
+		int boardEval = getBoardEval(g);
 		return boardEval;
 	}
 	
@@ -60,11 +60,11 @@ int minimax(Game ** g, int depth, int alpha, int beta, bool maximizingPlayer, in
 	{
 		(*g)->playOneMove(it->first, it->second);
 
-
-		score = minimax(&(*g), depth - 1, alpha, beta, !maximizingPlayer, count);
+        if (maximizingPlayer)
+		    score = minimax(&(*g), depth - 1, alpha, beta, !maximizingPlayer, count);
+        else
+            score = minimax(&(*g), depth - 1, alpha, beta, !maximizingPlayer, count);
         
-
-
         (*g)->revertLastMove();
 
         if (maximizingPlayer)
@@ -78,7 +78,7 @@ int minimax(Game ** g, int depth, int alpha, int beta, bool maximizingPlayer, in
 	return (maximizingPlayer ? alpha : beta);
 }
 
-coord getNextMove(Game * g)
+coord getNextMove(Game ** g)
 {
 	coord best_move;
 	int best_score = INT_MIN;
@@ -97,7 +97,7 @@ coord getNextMove(Game * g)
 	int alpha = INT_MIN;
 	int beta = INT_MAX;
 
-	coordSet playable_area_copy = g->playable_area;
+	coordSet playable_area_copy = (*g)->playable_area;
 
 	int score;
 	int depth = 3;
@@ -107,19 +107,20 @@ coord getNextMove(Game * g)
 	for (coordSet::const_iterator it = playable_area_copy.begin();
 		it != playable_area_copy.end(); it++)
 	{
+		printf("MOVE\n");
 		int x = it->first;
 		int y = it->second;
 
-		g->playOneMove(x, y);
+		(*g)->playOneMove(x, y);
 
         numberOfMoves += 1;
 
-		score = minimax(&g, depth - 1, alpha, beta, false, &count);
+		score = minimax(&(*g), depth - 1, alpha, beta, false, &count);
 
         if (DEBUG)
 		    debug[y][x] = std::to_string(score);
 
-		g->revertLastMove();
+		(*g)->revertLastMove();
 
 		if (score > best_score)
 		{
@@ -134,13 +135,14 @@ coord getNextMove(Game * g)
 
     std::cout << "NODES VISITED : " << count << std::endl;
 
+	/*
 	if (DEBUG)
 	{
-		for (coordSet::const_iterator it = g->stone_list[g->player].begin();
-			it != g->stone_list[g->player].end(); it++)
+		for (coordSet::const_iterator it = (*g)->stone_list[(*g)->player].begin();
+			it != (*g)->stone_list[(*g)->player].end(); it++)
 			debug[it->second][it->first] = "[X]";
-		for (coordSet::const_iterator it = g->stone_list[g->opponent].begin();
-			it != g->stone_list[g->opponent].end(); it++)
+		for (coordSet::const_iterator it = (*g)->stone_list[(*g)->opponent].begin();
+			it != (*g)->stone_list[(*g)->opponent].end(); it++)
 			debug[it->second][it->first] = "[O]";
 		
 		for (int i = 0; i < 19; i++)
@@ -153,15 +155,15 @@ coord getNextMove(Game * g)
         std::cout << "NUMBER OF MOVES : " << numberOfMoves << " / " << playable_area_copy.size() << std::endl;
         int brk;
         std::cin >> brk;
-        for (coordSet::const_iterator it = g->playable_area.begin();
-        it != g->playable_area.end(); it++)
+        for (coordSet::const_iterator it = (*g)->playable_area.begin();
+        it != (*g)->playable_area.end(); it++)
             std::cout << " " << it->first << " " << it->second << " ";
         std::cout << std::endl;
-	}
+	}*/
     //int brk;
     //std::cin >> brk;
 	std::cout << "NUMBER OF MOVES : " << numberOfMoves << " / " << playable_area_copy.size() << std::endl;	
-	g->best_move = best_move;
+	(*g)->best_move = best_move;
 	auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration<double>(stop - start);
     std::cout << "Elapsped time : " << duration.count() << std::endl;

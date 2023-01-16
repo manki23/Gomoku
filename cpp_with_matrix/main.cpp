@@ -23,42 +23,26 @@ void printPossibleMoves(coordSet pmoves)
 	std::cout << "]" << std::endl;
 }
 
-void resetPlayers(Game * g)
+void resetPlayers(Game ** g)
 {
-	g->player = 1;
-	g->opponent = 2;
+	(*g)->player = 1;
+	(*g)->opponent = 2;
 }
 
 int main()
 {
 	Game * g = new Game();
 
-	//sd::cout << g->goban_size << std::endl;
+	//sd::cout << (*g)->goban_size << std::endl;
 
-	//printPossibleMoves(g->possible_moves);
+	//printPossibleMoves((*g)->possible_moves);
 	coord move;
-	int turn = 0;
-	int xx;
-	int yy;
-	while (!g->game_over)
+	for (int i = 0; i < 10; i++)
 	{
-		if (turn == 0)
-		{
-			move = getNextMove(g);
-			std::cout << move.first << " " << move.second << std::endl;
-			g->playOneMove(move.first, move.second);
-			printStoneList(g->stone_list);
-		}
-		else
-		{
-			std::cin >> xx >> yy;
-			g->playOneMove(xx, yy);
-			printStoneList(g->stone_list);
-		}
-
-		turn = (turn == 0) ? 1 : 0;
+ 		move = getNextMove(&g);
+		std::cout << move.first << " " << move.second << std::endl;
+		g->playOneMove(move.first, move.second);
 	}
-
 
 	delete g;
 

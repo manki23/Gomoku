@@ -148,6 +148,15 @@ class Gomoku():
                 self.game.playOneMove(*self.game.bot_move)
                 self.game.bot_move = None
                 self.bot_thread = None
+            x_mouse, y_mouse = pygame.mouse.get_pos()
+            x = self._getCursorZone(x_mouse, self.x_padding)
+            y = self._getCursorZone(y_mouse, self.y_padding)
+
+            zone_padding = self.block_size // 2
+            xx = (x - self.x_padding) // self.block_size
+            yy = (y - self.y_padding) // self.block_size
+
+            print((xx, yy))
             pygame.display.update()
         self.menu()
  
